@@ -42,7 +42,7 @@ async function detect(options = {})
 #### 示例
 
 ```javascript
-const { detect } = require('dead-code-detector');
+const { detect } = require('@is_adou/dead-code-detector');
 
 async function main() {
   const result = await detect({
@@ -66,7 +66,7 @@ main();
 #### 构造函数
 
 ```javascript
-const { DeadCodeFinderAST } = require('dead-code-detector');
+const { DeadCodeFinderAST } = require('@is_adou/dead-code-detector');
 
 const finder = new DeadCodeFinderAST({
   srcDir: './src',
@@ -126,7 +126,7 @@ async function fix(options = {})
 #### 示例
 
 ```javascript
-const { DeadCodeFinderAST } = require('dead-code-detector');
+const { DeadCodeFinderAST } = require('@is_adou/dead-code-detector');
 
 async function main() {
   const finder = new DeadCodeFinderAST({
@@ -159,7 +159,7 @@ main();
 #### 构造函数
 
 ```javascript
-const { DeadCodeFinder } = require('dead-code-detector');
+const { DeadCodeFinder } = require('@is_adou/dead-code-detector');
 
 const finder = new DeadCodeFinder({
   srcDir: './src',
@@ -275,7 +275,7 @@ try {
 #### 构造函数
 
 ```javascript
-const { CacheManager } = require('dead-code-detector');
+const { CacheManager } = require('@is_adou/dead-code-detector');
 
 const cacheManager = new CacheManager({
   projectRoot: './my-project',
@@ -402,7 +402,7 @@ const cacheManager = new CacheManager({
 #### 示例
 
 ```javascript
-const { CacheManager } = require('dead-code-detector');
+const { CacheManager } = require('@is_adou/dead-code-detector');
 
 const cache = new CacheManager({
   projectRoot: './my-project',
@@ -485,7 +485,7 @@ A: 自动修复会删除：
 ### 基本用法
 
 ```javascript
-const { detect } = require('dead-code-detector');
+const { detect } = require('@is_adou/dead-code-detector');
 
 async function checkDeadCode() {
   console.log('开始检测死代码...');
@@ -516,7 +516,7 @@ checkDeadCode().catch(console.error);
 ### 自动修复
 
 ```javascript
-const { detect } = require('dead-code-detector');
+const { detect } = require('@is_adou/dead-code-detector');
 
 async function fixDeadCode() {
   console.log('开始检测并修复死代码...');
@@ -549,7 +549,7 @@ fixDeadCode().catch(console.error);
 
 ```javascript
 // 在构建脚本中使用
-const { detect } = require('dead-code-detector');
+const { detect } = require('@is_adou/dead-code-detector');
 
 async function build() {
   // 先检测死代码
@@ -648,7 +648,7 @@ interface FixResult {
 ### 使用示例
 
 ```typescript
-import { detect, DeadCodeFinderAST } from 'dead-code-detector';
+import { detect, DeadCodeFinderAST } from '@is_adou/dead-code-detector';
 
 const result = await detect({
   srcDir: './src',
@@ -672,5 +672,5 @@ const { unusedExports, unusedComponents, unusedToolFiles } = result.results;
 
 ## 相关链接
 
-- [GitHub 仓库](https://github.com/your-username/dead-code-detector)
-- [问题反馈](https://github.com/your-username/dead-code-detector/issues)
+- [GitHub 仓库](https://github.com/Adou377/dead-code-detector)
+- [问题反馈](https://github.com/Adou377/dead-code-detector/issues)

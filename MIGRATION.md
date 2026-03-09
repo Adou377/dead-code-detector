@@ -45,7 +45,7 @@ This guide helps you migrate from other dead code detection tools to Dead Code D
 
 2. **Install Dead Code Detector**:
    ```bash
-   npm install dead-code-detector --save-dev
+   npm install @is_adou/dead-code-detector --save-dev
    ```
 
 3. **Create configuration file**:
@@ -119,7 +119,7 @@ This guide helps you migrate from other dead code detection tools to Dead Code D
 
 2. **Install Dead Code Detector**:
    ```bash
-   npm install dead-code-detector --save-dev
+   npm install @is_adou/dead-code-detector --save-dev
    ```
 
 3. **Create configuration file**:
@@ -327,7 +327,7 @@ Version 1.0.0 is the first stable release with several improvements and changes.
 
 1. **Update package**:
    ```bash
-   npm install dead-code-detector@latest
+   npm install @is_adou/dead-code-detector@latest
    ```
 
 2. **Review configuration**:
@@ -357,7 +357,7 @@ Version 1.0.0 is the first stable release with several improvements and changes.
 #### Checking for Updates
 
 ```bash
-npm outdated dead-code-detector
+npm outdated @is_adou/dead-code-detector
 ```
 
 #### Upgrade Best Practices
@@ -484,6 +484,6 @@ Some differences:
 
 ## Need Help?
 
-- [GitHub Issues](https://github.com/your-repo/dead-code-detector/issues)
+- [GitHub Issues](https://github.com/Adou377/dead-code-detector/issues)
 - [Documentation](./README.md)
 - [API Reference](./API.md)

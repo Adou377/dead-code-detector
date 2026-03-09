@@ -308,8 +308,8 @@ npm test -- --testNamePattern="性能回归检测"
 
 | 工具 | 100 文件耗时 | 准确度 | Vue 支持 |
 |-----|-------------|-------|---------|
-| dead-code-detector (AST) | ~3s | 高 | 完整 |
-| dead-code-detector (Regex) | ~1.5s | 中 | 完整 |
+| @is_adou/dead-code-detector (AST) | ~3s | 高 | 完整 |
+| @is_adou/dead-code-detector (Regex) | ~1.5s | 中 | 完整 |
 | ts-prune | ~4s | 高 | 无 |
 | depcheck | ~5s | 中 | 部分 |
 
@@ -374,7 +374,7 @@ dead-code
 # GitHub Actions 示例
 - name: Dead Code Detection
   run: |
-    npm install -g dead-code-detector
+    npm install -g @is_adou/dead-code-detector
     dead-code --cache false
 ```
 

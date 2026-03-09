@@ -173,7 +173,7 @@ src/
 
 ```javascript
 // API 使用示例
-const { detect } = require('dead-code-detector');
+const { detect } = require('@is_adou/dead-code-detector');
 const result = await detect({ srcDir: './src', mode: 'ast' });
 ```
 

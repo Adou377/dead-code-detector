@@ -1,6 +1,6 @@
 # 测试指南
 
-本文档介绍如何为 dead-code-detector 项目编写和运行测试。
+本文档介绍如何为 @is_adou/dead-code-detector 项目编写和运行测试。
 
 ## 测试框架
 

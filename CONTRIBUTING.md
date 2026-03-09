@@ -13,7 +13,7 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/your-username/dead-code-detector.git
+git clone https://github.com/Adou377/dead-code-detector.git
 cd dead-code-detector
 
 # 安装依赖

@@ -18,7 +18,7 @@
 
 ```bash
 # 1. 全局安装
-npm install -g dead-code-detector
+npm install -g @is_adou/dead-code-detector
 
 # 2. 在项目中运行检测
 cd your-project
@@ -32,10 +32,10 @@ dead-code --fix
 
 ```bash
 # 全局安装（推荐频繁使用）
-npm install -g dead-code-detector
+npm install -g @is_adou/dead-code-detector
 
 # 本地安装（项目特定使用）
-npm install dead-code-detector --save-dev
+npm install @is_adou/dead-code-detector --save-dev
 ```
 
 ## 🛠️ 使用方式
@@ -93,7 +93,7 @@ dead-code --fix --confirm
 #### 基础 API
 
 ```javascript
-const { detect } = require('dead-code-detector');
+const { detect } = require('@is_adou/dead-code-detector');
 
 async function main() {
   // 运行检测
@@ -123,7 +123,7 @@ main();
 #### 高级 API
 
 ```javascript
-const { DeadCodeFinderAST, DeadCodeFinderRegex } = require('dead-code-detector');
+const { DeadCodeFinderAST, DeadCodeFinderRegex } = require('@is_adou/dead-code-detector');
 
 async function main() {
   // 创建查找器实例

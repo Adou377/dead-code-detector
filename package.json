@@ -1,5 +1,5 @@
 {
-  "name": "dead-code-detector",
+  "name": "@is_adou/dead-code-detector",
   "version": "1.0.0",
   "description": "死代码检测工具 - 检测未使用的导出、Vue/React 组件",
   "main": "src/index.js",
@@ -45,7 +45,8 @@
   },
   "homepage": "https://github.com/Adou377/dead-code-detector#readme",
   "publishConfig": {
-    "registry": "https://registry.npmjs.org"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   },
   "engines": {
     "node": ">=14.0.0"

@@ -19,7 +19,7 @@ An efficient dead code detection tool designed for Vue 2/3 and React projects, h
 
 ```bash
 # 1. Install globally
-npm install -g dead-code-detector
+npm install -g @is_adou/dead-code-detector
 
 # 2. Run detection in your project
 cd your-project
@@ -33,10 +33,10 @@ dead-code --fix
 
 ```bash
 # Global installation (recommended for frequent use)
-npm install -g dead-code-detector
+npm install -g @is_adou/dead-code-detector
 
 # Local installation (for project-specific usage)
-npm install dead-code-detector --save-dev
+npm install @is_adou/dead-code-detector --save-dev
 ```
 
 ## 🛠️ Usage
@@ -119,7 +119,7 @@ The cache stores:
 #### Basic API
 
 ```javascript
-const { detect } = require('dead-code-detector');
+const { detect } = require('@is_adou/dead-code-detector');
 
 async function main() {
   // Run detection
@@ -149,7 +149,7 @@ main();
 #### Advanced API
 
 ```javascript
-const { DeadCodeFinderAST, DeadCodeFinderRegex } = require('dead-code-detector');
+const { DeadCodeFinderAST, DeadCodeFinderRegex } = require('@is_adou/dead-code-detector');
 
 async function main() {
   // Create finder instance
