@@ -1,0 +1,61 @@
+name: Dead Code Detection
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # 每周一凌晨 2 点执行
+    - cron: '0 2 * * 1'
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run dead code detection (Full scan)
+        if: github.event_name == 'push' || github.event_name == 'schedule'
+        run: |
+          npx dead-code --src ./src --mode ast --verbose
+        continue-on-error: true
+
+      - name: Run dead code detection (Incremental)
+        if: github.event_name == 'pull_request'
+        run: |
+          npx dead-code --src ./src --mode ast --incremental --base-branch origin/main --verbose
+        continue-on-error: true
+
+      - name: Upload detection report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dead-code-report
+          path: |
+            dead-code-report.json
+          retention-days: 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ **Dead Code Detection 发现问题**\n\n请检查死代码检测报告，移除未使用的代码。'
+            })

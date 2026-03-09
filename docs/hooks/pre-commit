@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Pre-commit hook for dead code detection
+# Only checks staged files for dead code
+
+echo "🔍 Running dead code detection on staged files..."
+
+# Get staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(js|jsx|ts|tsx|vue)$')
+
+if [ -z "$STAGED_FILES" ]; then
+  echo "✅ No JS/TS/Vue files to check"
+  exit 0
+fi
+
+# Run dead code detection in incremental mode
+npx dead-code --src ./src --mode ast --incremental --verbose
+
+# If you want to block commits when dead code is found, uncomment the following:
+# if [ $? -ne 0 ]; then
+#   echo "❌ Dead code detected! Please remove unused code before committing."
+#   exit 1
+# fi
+
+echo "✅ Dead code check completed"

@@ -1,0 +1,34 @@
+# Azure Pipelines 配置示例
+# 将此文件复制到你的项目根目录并命名为 azure-pipelines.yml
+
+trigger:
+  - main
+  - master
+
+pr:
+  - main
+  - master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '20.x'
+    displayName: 'Install Node.js'
+
+  - script: npm ci
+    displayName: 'Install dependencies'
+
+  - script: |
+      npx dead-code --src ./src --mode ast --verbose
+    displayName: 'Run dead code detection'
+    continueOnError: true
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: 'dead-code-report.json'
+      artifactName: 'dead-code-report'
+    condition: always()
+    displayName: 'Publish detection report'

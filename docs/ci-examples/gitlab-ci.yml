@@ -1,0 +1,41 @@
+# GitLab CI 配置示例
+# 将此文件复制到你的项目根目录并命名为 .gitlab-ci.yml
+
+stages:
+  - test
+
+dead-code-detection:
+  stage: test
+  image: node:20
+  before_script:
+    - npm ci
+  script:
+    # 全量扫描
+    - npx dead-code --src ./src --mode ast --verbose
+  allow_failure: true
+  artifacts:
+    when: always
+    paths:
+      - dead-code-report.json
+    expire_in: 30 days
+  only:
+    - main
+    - master
+    - merge_requests
+
+# 增量扫描（仅针对 MR）
+dead-code-incremental:
+  stage: test
+  image: node:20
+  before_script:
+    - npm ci
+  script:
+    # 增量扫描
+    - git fetch origin main
+    - npx dead-code --src ./src --mode ast --incremental --base-branch origin/main --verbose
+  allow_failure: true
+  only:
+    - merge_requests
+  except:
+    - main
+    - master
