@@ -34,7 +34,7 @@ jobs:
         run: npm run lint
 
       - name: Run tests
-        run: npm test -- --testPathIgnorePatterns="worker.test.js"
+        run: npm test
         env:
           CI: true
 

@@ -8,12 +8,11 @@ if (process.env.CI) {
   testPathIgnorePatterns.push('worker.test.js');
 }
 
-// CI 环境中排除 Worker 测试（资源限制导致不稳定）
-const isCI ? process.env.CI : '/node_modules/',
-  '/__tests__/fixtures/',
-] :  transformIgnorePatterns: [
-  'node_modules/',
-  '__tests__/fixtures/',
+module.exports = {
+  testPathIgnorePatterns,
+  transformIgnorePatterns: [
+    'node_modules/',
+    '__tests__/fixtures/',
   ],
   testMatch: [
     '**/__tests__/**/*.test.js',
