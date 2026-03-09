@@ -23,4 +23,7 @@ module.exports = {
     },
   },
   coverageReporters: ['text', 'lcov', 'html'],
+  testTimeout: 30000,
+  detectOpenHandles: true,
+  forceExit: true,
 };
