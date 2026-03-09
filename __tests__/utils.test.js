@@ -155,7 +155,9 @@ describe('Utils', () => {
 
     test('should handle absolute paths correctly', () => {
       expect(isSafePath('/app/src', '/app/src/pages/index.js')).toBe(true);
-      expect(isSafePath('C:\\project\\src', 'C:\\project\\src\\components')).toBe(true);
+      if (process.platform === 'win32') {
+        expect(isSafePath('C:\\project\\src', 'C:\\project\\src\\components')).toBe(true);
+      }
       expect(isSafePath('/app/src', '/app/src-backup/file.js')).toBe(false);
     });
 

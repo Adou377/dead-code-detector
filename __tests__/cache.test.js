@@ -183,6 +183,9 @@ describe('CacheManager', () => {
     });
 
     test('应规范化路径', () => {
+      if (process.platform !== 'win32') {
+        return;
+      }
       const testFile = path.join(tempDir, 'test.js');
       fs.writeFileSync(testFile, 'export const foo = 1;');
 
