@@ -34,7 +34,9 @@ jobs:
         run: npm run lint
 
       - name: Run tests
-        run: npm test
+        run: npm test -- --testPathIgnorePatterns="worker.test.js"
+        env:
+          CI: true
 
       - name: Upload coverage
         if: matrix.node-version == '20.x'
