@@ -5,7 +5,7 @@ const testPathIgnorePatterns = [
 ];
 
 if (process.env.CI) {
-  testPathIgnorePatterns.push('worker\\.test\\.js');
+  testPathIgnorePatterns.push('worker');
 }
 
 module.exports = {
