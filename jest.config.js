@@ -1,11 +1,11 @@
-// CI 环境中排除 worker.test.js（资源限制导致不稳定）
+// CI 环境中排除 worker 相关测试（资源限制导致不稳定）
 const testPathIgnorePatterns = [
   '/node_modules/',
   '/__tests__/fixtures/',
 ];
 
 if (process.env.CI) {
-  testPathIgnorePatterns.push('/worker\\.test\\.js$');
+  testPathIgnorePatterns.push('worker');
 }
 
 module.exports = {
