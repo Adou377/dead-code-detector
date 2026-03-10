@@ -107,10 +107,18 @@ function parseVueFile(filePath, content, srcDir, result) {
 
   const parseResult = parser.parse(content, filePath);
 
-  if (parseResult.success && parseResult.ast) {
-    result.success = true;
-    extractFromAst(parseResult.ast, result);
+  // 区分有脚本块和无脚本块的情况
+  if (parseResult.success) {
+    if (parseResult.ast) {
+      // 有脚本块且解析成功
+      result.success = true;
+      extractFromAst(parseResult.ast, result);
+    } else if (parseResult.hasScript === false) {
+      // 纯模板组件（无脚本块），仍然标记为成功
+      result.success = true;
+    }
   } else {
+    // 解析失败（有脚本块但语法错误）
     result.error = parseResult.error || '解析失败';
   }
 

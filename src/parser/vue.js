@@ -91,6 +91,65 @@ function extractVueMacros(scriptContent, ast) {
 }
 
 /**
+ * 从模板中提取组件引用信息
+ * @param {string} templateContent - 模板内容
+ * @returns {Object} 模板分析结果
+ */
+function extractTemplateInfo(templateContent) {
+  const info = {
+    components: [],
+    isSvgComponent: false,
+    hasTemplate: false,
+  };
+
+  if (!templateContent) return info;
+
+  info.hasTemplate = true;
+
+  // 检测是否为 SVG 图标组件
+  const svgMatch = templateContent.match(/<svg[\s>]/i);
+  if (svgMatch) {
+    // 检查 SVG 是否为主要内容（SVG 图标组件通常以 SVG 为根元素或主要内容）
+    const svgContent = templateContent.match(/<svg[\s\S]*?<\/svg>/i);
+    if (svgContent && svgContent[0].length > templateContent.length * 0.5) {
+      info.isSvgComponent = true;
+    }
+  }
+
+  // 提取 PascalCase 组件标签（自定义组件）
+  // 匹配 <ComponentName 或 <ComponentName:slot 等模式
+  const componentTagRegex = /<([A-Z][a-zA-Z0-9]*(?:-[a-zA-Z0-9]+)*)/g;
+  let match;
+  while ((match = componentTagRegex.exec(templateContent)) !== null) {
+    const componentName = match[1];
+    // 排除 SVG 相关标签（如 Svg, Path 等虽然首字母大写但不是组件引用）
+    const svgTags = ['Svg', 'Path', 'Circle', 'Rect', 'Line', 'Polygon', 'Polyline', 'Ellipse', 'G', 'Defs', 'Use', 'Symbol', 'Text', 'Tspan', 'LinearGradient', 'RadialGradient', 'Stop', 'ClipPath', 'Mask', 'Pattern', 'Image', 'ForeignObject'];
+    if (!svgTags.includes(componentName)) {
+      if (!info.components.includes(componentName)) {
+        info.components.push(componentName);
+      }
+    }
+  }
+
+  // 提取 kebab-case 组件引用（通过组件名推断 PascalCase）
+  // 例如 <my-component 可能对应 MyComponent
+  const kebabComponentRegex = /<([a-z][a-z0-9]*-[a-z0-9-]+)/gi;
+  while ((match = kebabComponentRegex.exec(templateContent)) !== null) {
+    const kebabName = match[1];
+    // 转换为 PascalCase
+    const pascalName = kebabName
+      .split('-')
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join('');
+    if (!info.components.includes(pascalName)) {
+      info.components.push(pascalName);
+    }
+  }
+
+  return info;
+}
+
+/**
  * 检查文件是否为 Vue 组件
  * @param {string} content - Vue 文件内容
  * @returns {Object} 组件信息
@@ -99,6 +158,9 @@ function parseVueComponent(content) {
   const result = {
     isComponent: false,
     hasScriptSetup: false,
+    hasTemplate: false,
+    isPureTemplateComponent: false,
+    isSvgComponent: false,
     components: [],
     composables: [],
     props: null,
@@ -107,15 +169,37 @@ function parseVueComponent(content) {
     fileName: '',
   };
 
-  // Check for script setup
+  // 检查是否有 script setup
   const scriptSetupMatch = content.match(/<script\s+setup/i);
   if (scriptSetupMatch) {
     result.hasScriptSetup = true;
   }
 
-  // Check for script
+  // 检查并提取模板信息
+  const templateMatch = content.match(/<template(?:\s[^>]*)?>([\s\S]*?)<\/template>/i);
+  const templateContent = templateMatch ? templateMatch[1] : null;
+  const templateInfo = extractTemplateInfo(templateContent);
+  result.hasTemplate = templateInfo.hasTemplate;
+  result.isSvgComponent = templateInfo.isSvgComponent;
+
+  // 将模板中引用的组件添加到结果中
+  if (templateInfo.components.length > 0) {
+    templateInfo.components.forEach(comp => {
+      if (!result.components.includes(comp)) {
+        result.components.push(comp);
+      }
+    });
+  }
+
+  // 检查 script 块
   const scriptMatch = content.match(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/i);
+
+  // 如果没有 script 块但有 template 块，识别为纯模板组件
   if (!scriptMatch) {
+    if (result.hasTemplate) {
+      result.isComponent = true;
+      result.isPureTemplateComponent = true;
+    }
     return result;
   }
 
@@ -123,20 +207,25 @@ function parseVueComponent(content) {
   const astResult = parseJs(scriptContent, 'temp.vue');
 
   if (!astResult.success || !astResult.ast) {
+    // 即使 AST 解析失败，如果有 template 块，仍然可能是组件
+    if (result.hasTemplate) {
+      result.isComponent = true;
+      result.isPureTemplateComponent = true;
+    }
     return result;
   }
 
-  // Extract Vue macros
+  // 提取 Vue 宏
   const macros = extractVueMacros(scriptContent, astResult.ast);
   result.props = macros.defineProps;
   result.emits = macros.defineEmits;
   result.exposed = macros.defineExpose;
   result.composables = macros.composables || [];
 
-  // Determine if it's a component by looking at:
-  // 1. Components registered with import { ... } from 'vue'
-  // 2. defineProps with component type
-  // 3. PascalCase function definitions
+  // 通过以下方式判断是否为组件：
+  // 1. 从 vue 导入的组件注册
+  // 2. defineProps 的组件类型
+  // 3. PascalCase 函数定义
   const componentVisitor = {
     ImportDeclaration(path) {
       const source = path.get('source').node.value;
@@ -145,9 +234,8 @@ function parseVueComponent(content) {
         specifiers.forEach(specifier => {
           if (specifier.isImportSpecifier()) {
             const imported = specifier.get('imported').node.name;
-            // Check for common component imports or composables
             if (imported.startsWith('on') || VUE3_MACROS.includes(imported)) {
-              // It's a Vue API, not a component
+              // Vue API，不是组件
             } else if (COMPOSABLE_PATTERNS.some(p => p.test(imported))) {
               result.composables.push(imported);
             }
@@ -159,11 +247,11 @@ function parseVueComponent(content) {
       const id = path.get('id');
       if (id.isIdentifier()) {
         const name = id.node.name;
-        // PascalCase variable might be a component
+        // PascalCase 变量可能是组件
         if (/^[A-Z]/.test(name) && !VUE3_MACROS.includes(name)) {
           result.components.push(name);
         }
-        // Composable pattern
+        // 组合式函数模式
         if (COMPOSABLE_PATTERNS.some(p => p.test(name))) {
           result.composables.push(name);
         }
@@ -183,8 +271,12 @@ function parseVueComponent(content) {
   const traverse = require('@babel/traverse').default;
   traverse(astResult.ast, componentVisitor);
 
-  // If it has script setup or exports, consider it a component
-  if (result.hasScriptSetup || result.components.length > 0 || result.composables.length > 0) {
+  // 判断是否为组件的条件：
+  // 1. 有 script setup
+  // 2. 有组件定义
+  // 3. 有组合式函数
+  // 4. 有 template 块（纯模板组件）
+  if (result.hasScriptSetup || result.components.length > 0 || result.composables.length > 0 || result.hasTemplate) {
     result.isComponent = true;
   }
 
@@ -194,6 +286,7 @@ function parseVueComponent(content) {
 module.exports = {
   parseVueComponent,
   extractVueMacros,
+  extractTemplateInfo,
   VUE3_MACROS,
   COMPOSABLE_PATTERNS,
 };

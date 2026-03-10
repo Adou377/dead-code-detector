@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-03-10
+
+### Changed
+
+- **测试目录检测优化**
+  - 测试目录不存在时静默跳过，不再输出警告信息
+  - 只有当测试目录存在但无法访问时才输出警告
+  - 避免给用户造成"出错"的错觉
+
+- **Vue 解析器优化**
+  - 支持纯模板组件（无 `<script>` 块的 Vue 组件）
+  - 支持 SVG 图标组件的正确识别
+  - 新增 `hasScript` 字段区分"无脚本块"和"解析失败"两种状态
+  - 纯模板组件不再被错误报告为解析失败
+
+### Added
+
+- **模板信息提取**
+  - 新增 `extractTemplateInfo` 函数
+  - 自动检测 SVG 图标组件
+  - 提取模板中的组件引用信息
+
+### Fixed
+
+- 修复纯 SVG 图标组件被误报为"解析失败"的问题
+- 修复测试目录不存在时输出过多警告的问题
+
+### Documentation
+
+- 补充本地安装后的使用方式说明
+- 新增 `npx dead-code` 和 npm scripts 配置示例
+
 ## [1.0.0] - 2026-03-05
 
 ### Added

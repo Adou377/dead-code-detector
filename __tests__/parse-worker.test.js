@@ -57,6 +57,29 @@ export const testProp = 'value';
       expect(result.vueInfo.isComponent).toBe(true);
     });
 
+    test('应该正确解析纯模板 Vue 组件（无脚本块）', () => {
+      const vueFile = path.join(testDir, 'SvgIcon.vue');
+      fs.writeFileSync(
+        vueFile,
+        `<template>
+  <svg viewBox="0 0 24 24">
+    <path d="M12 2L2 22h20L12 2z"/>
+  </svg>
+</template>`
+      );
+
+      const result = parseFile({
+        filePath: vueFile,
+        srcDir: testDir,
+        maxFileSize: 1000000,
+      });
+
+      // 纯模板组件是合法的 Vue 3 组件，应该返回成功
+      expect(result.success).toBe(true);
+      expect(result.vueInfo).toBeDefined();
+      expect(result.vueInfo.isComponent).toBe(true);
+    });
+
     test('应该正确解析 TypeScript 文件', () => {
       const tsFile = path.join(testDir, 'types.ts');
       fs.writeFileSync(

@@ -110,9 +110,12 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
         }
 
         const result = parse(content, filePath);
+        // 区分有脚本块和无脚本块的情况
         if (result.success && result.ast) {
+          // 有脚本块且解析成功，处理 AST
           this.processAstResult(relativePath, result.ast, content);
         }
+        // 纯模板组件（hasScript: false）不需要处理 AST，组件信息已通过 parseVueComponent 获取
       } else if (['.js', '.jsx', '.ts', '.tsx'].includes(ext)) {
         const result = parse(content, filePath);
 

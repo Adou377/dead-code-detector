@@ -71,6 +71,7 @@ function parseVue(content, filePath) {
   let scriptContent = '';
   let isScriptSetup = false;
 
+  // 优先匹配 script setup 块
   if (scriptSetupMatch) {
     scriptContent = scriptSetupMatch[1];
     isScriptSetup = true;
@@ -78,20 +79,22 @@ function parseVue(content, filePath) {
     scriptContent = scriptMatch[1];
   }
 
-  if (!scriptContent) {
+  // 无脚本块：纯模板组件，属于合法情况
+  if (!scriptContent || scriptContent.trim() === '') {
     return {
       ast: null,
-      success: false,
-      error: 'No script block found',
+      success: true,
+      hasScript: false,
     };
   }
 
-  // Parse the script content as JavaScript
+  // 有脚本块：解析脚本内容
   const result = parseJs(scriptContent, filePath);
 
   if (result.success) {
     result.isScriptSetup = isScriptSetup;
     result.scriptContent = scriptContent;
+    result.hasScript = true;
   }
 
   return result;

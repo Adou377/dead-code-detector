@@ -138,6 +138,12 @@ class DeadCodeFinderBase {
           }
         }
       } catch (e) {
+        // 区分目录不存在（ENOENT）和目录存在但无法访问的情况
+        if (e.code === 'ENOENT') {
+          // 目录不存在，静默跳过，不输出警告
+          continue;
+        }
+        // 目录存在但无法访问，保留警告输出
         console.warn(`⚠️  无法访问测试目录: ${testDirPath}`);
         console.warn(`   错误信息: ${e.message}`);
       }

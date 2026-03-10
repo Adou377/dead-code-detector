@@ -42,6 +42,26 @@ npm install @is_adou/dead-code-detector --save-dev
 
 ### 命令行使用
 
+#### 根据安装方式选择运行方法
+
+```bash
+# 全局安装后，直接运行
+dead-code
+
+# 本地安装后，使用 npx 运行
+npx dead-code
+
+# 本地安装后，也可以在 package.json 的 scripts 中配置
+# package.json:
+# {
+#   "scripts": {
+#     "dead-code": "dead-code"
+#   }
+# }
+# 然后运行:
+npm run dead-code
+```
+
 #### 基础检测
 ```bash
 # 检测当前目录 src 文件夹

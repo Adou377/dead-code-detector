@@ -43,6 +43,26 @@ npm install @is_adou/dead-code-detector --save-dev
 
 ### Command Line Usage
 
+#### Running Based on Installation Method
+
+```bash
+# After global installation, run directly
+dead-code
+
+# After local installation, use npx
+npx dead-code
+
+# After local installation, you can also configure in package.json scripts
+# package.json:
+# {
+#   "scripts": {
+#     "dead-code": "dead-code"
+#   }
+# }
+# Then run:
+npm run dead-code
+```
+
 #### Basic Detection
 ```bash
 # Detect in current directory src folder
