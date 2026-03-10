@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 支持纯模板组件（无 `<script>` 块的 Vue 组件）
   - 支持 SVG 图标组件的正确识别
   - 新增 `hasScript` 字段区分"无脚本块"和"解析失败"两种状态
-  - 纯模板组件不再被错误报告为解析失败
+  - 纯模板组件不被追踪为组件（没有可追踪的导出）
 
 ### Added
 

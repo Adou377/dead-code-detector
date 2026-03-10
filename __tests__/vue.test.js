@@ -107,8 +107,8 @@ export default {
 `;
 
     const result = parseVueComponent(content);
-    // 纯模板组件是合法的 Vue 3 组件
-    expect(result.isComponent).toBe(true);
+    // 纯模板组件是合法的 Vue 3 组件，但没有可追踪的导出
+    expect(result.isComponent).toBe(false);
     expect(result.hasTemplate).toBe(true);
     expect(result.isPureTemplateComponent).toBe(true);
   });

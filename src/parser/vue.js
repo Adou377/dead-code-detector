@@ -195,10 +195,11 @@ function parseVueComponent(content) {
   const scriptMatch = content.match(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/i);
 
   // 如果没有 script 块但有 template 块，识别为纯模板组件
+  // 注意：纯模板组件是有效的 Vue 文件，但不追踪为组件（没有可追踪的导出）
   if (!scriptMatch) {
     if (result.hasTemplate) {
-      result.isComponent = true;
       result.isPureTemplateComponent = true;
+      // 不设置 isComponent = true，因为纯模板组件没有可追踪的导出
     }
     return result;
   }
@@ -207,11 +208,7 @@ function parseVueComponent(content) {
   const astResult = parseJs(scriptContent, 'temp.vue');
 
   if (!astResult.success || !astResult.ast) {
-    // 即使 AST 解析失败，如果有 template 块，仍然可能是组件
-    if (result.hasTemplate) {
-      result.isComponent = true;
-      result.isPureTemplateComponent = true;
-    }
+    // AST 解析失败，不追踪为组件
     return result;
   }
 
