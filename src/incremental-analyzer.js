@@ -3,6 +3,12 @@
  *
  * 支持基于 Git 变更的增量检测，提升大型项目的分析速度
  * 支持持久化缓存，复用未变更文件的分析结果
+ * 
+ * 优化版本：
+ * - 使用预构建的反向依赖图索引
+ * - 统一路径规范化处理
+ * - 提取通用过滤逻辑
+ * - 支持依赖图缓存和增量更新
  */
 
 const { execSync } = require('child_process');
@@ -10,11 +16,325 @@ const path = require('path');
 const { defaultLogger } = require('./logger');
 const { CacheManager, createCacheManager } = require('./cache');
 
+const PATH_SEP = '/';
+const SOURCE_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.vue']);
+
+/**
+ * 规范化文件路径（统一使用正斜杠）
+ * @param {string} filePath - 文件路径
+ * @returns {string} 规范化后的路径
+ */
+function normalizePath(filePath) {
+  if (!filePath) return '';
+  return filePath.replace(/\\/g, PATH_SEP);
+}
+
+/**
+ * 依赖图管理类
+ * 负责构建、缓存和查询文件依赖关系
+ */
+class DependencyGraph {
+  constructor() {
+    // 正向依赖：文件 -> 它导入的文件
+    this.forwardDeps = new Map();
+    // 反向依赖：文件 -> 导入它的文件（用于增量分析）
+    this.reverseDeps = new Map();
+    // 路径索引：用于快速查找
+    this.pathIndex = new Map();
+  }
+
+  /**
+   * 添加依赖关系
+   * @param {string} from - 导入方文件
+   * @param {string} to - 被导入的文件
+   */
+  addDependency(from, to) {
+    const normalizedFrom = normalizePath(from);
+    const normalizedTo = normalizePath(to);
+
+    // 更新正向依赖
+    if (!this.forwardDeps.has(normalizedFrom)) {
+      this.forwardDeps.set(normalizedFrom, new Set());
+    }
+    this.forwardDeps.get(normalizedFrom).add(normalizedTo);
+
+    // 更新反向依赖
+    if (!this.reverseDeps.has(normalizedTo)) {
+      this.reverseDeps.set(normalizedTo, new Set());
+    }
+    this.reverseDeps.get(normalizedTo).add(normalizedFrom);
+
+    // 更新路径索引（支持部分路径匹配）
+    this._updatePathIndex(normalizedTo);
+  }
+
+  /**
+   * 批量构建依赖图
+   * @param {Map} imports - 导入映射（文件 -> 导入列表）
+   * @param {string} srcDir - 源代码目录
+   */
+  buildFromImports(imports, srcDir) {
+    this.clear();
+
+    // 第一遍：收集所有文件路径用于后续匹配
+    const allFiles = new Set();
+    for (const [file] of imports) {
+      allFiles.add(normalizePath(file));
+    }
+
+    for (const [file, fileImports] of imports) {
+      const normalizedFile = normalizePath(file);
+      
+      for (const imp of fileImports) {
+        if (imp.source && imp.isInternal) {
+          // 尝试多种解析策略
+          let resolvedPath = this._resolveImportPath(imp.source, file, srcDir);
+          
+          // 如果文件系统解析失败，尝试路径推导
+          if (!resolvedPath) {
+            resolvedPath = this._resolveByPathInference(imp.source, file, allFiles);
+          }
+          
+          if (resolvedPath) {
+            this.addDependency(normalizedFile, resolvedPath);
+          } else {
+            // 无法解析时，存储原始路径用于模糊匹配
+            this._addFuzzyDependency(normalizedFile, imp.source);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * 获取受影响的所有文件（使用 BFS）
+   * @param {string[]} changedFiles - 变更的文件列表
+   * @returns {Set} 受影响的文件集合
+   */
+  getAffectedFiles(changedFiles) {
+    const affected = new Set();
+    const queue = [];
+    const visited = new Set();
+
+    // 初始化队列
+    for (const file of changedFiles) {
+      const normalized = normalizePath(file);
+      if (!visited.has(normalized)) {
+        visited.add(normalized);
+        queue.push(normalized);
+        affected.add(file); // 保留原始路径格式
+      }
+    }
+
+    // BFS 遍历反向依赖
+    while (queue.length > 0) {
+      const current = queue.shift();
+
+      // 精确匹配
+      const dependents = this.reverseDeps.get(current);
+      if (dependents) {
+        for (const dep of dependents) {
+          if (!visited.has(dep)) {
+            visited.add(dep);
+            queue.push(dep);
+            affected.add(dep);
+          }
+        }
+      }
+
+      // 模糊匹配（处理路径解析失败的情况）
+      const fuzzyMatches = this._findFuzzyMatches(current);
+      for (const match of fuzzyMatches) {
+        if (!visited.has(match)) {
+          visited.add(match);
+          queue.push(match);
+          affected.add(match);
+        }
+      }
+    }
+
+    return affected;
+  }
+
+  /**
+   * 清空依赖图
+   */
+  clear() {
+    this.forwardDeps.clear();
+    this.reverseDeps.clear();
+    this.pathIndex.clear();
+  }
+
+  /**
+   * 获取统计信息
+   * @returns {Object} 统计信息
+   */
+  getStats() {
+    return {
+      totalFiles: this.forwardDeps.size,
+      totalDependencies: Array.from(this.forwardDeps.values())
+        .reduce((sum, deps) => sum + deps.size, 0),
+      reverseDepsCount: this.reverseDeps.size,
+    };
+  }
+
+  /**
+   * 更新路径索引
+   * @private
+   */
+  _updatePathIndex(normalizedPath) {
+    // 提取文件名部分用于索引
+    const parts = normalizedPath.split(PATH_SEP);
+    const fileName = parts[parts.length - 1];
+    
+    if (!this.pathIndex.has(fileName)) {
+      this.pathIndex.set(fileName, new Set());
+    }
+    this.pathIndex.get(fileName).add(normalizedPath);
+  }
+
+  /**
+   * 解析导入路径
+   * @private
+   */
+  _resolveImportPath(importSource, fromFile, _srcDir) {
+    if (!importSource || !importSource.startsWith('.')) {
+      return null;
+    }
+
+    try {
+      const fromDir = path.dirname(fromFile);
+      const resolved = path.resolve(fromDir, importSource);
+      
+      // 尝试各种可能的扩展名
+      const extensions = ['.js', '.jsx', '.ts', '.tsx', '.vue'];
+      for (const ext of extensions) {
+        const withExt = resolved + ext;
+        if (require('fs').existsSync(withExt)) {
+          return normalizePath(withExt);
+        }
+      }
+      
+      // 尝试 index 文件
+      for (const ext of extensions) {
+        const indexPath = path.join(resolved, 'index' + ext);
+        if (require('fs').existsSync(indexPath)) {
+          return normalizePath(indexPath);
+        }
+      }
+    } catch {
+      // 忽略解析错误
+    }
+
+    return null;
+  }
+
+  /**
+   * 通过路径推导解析导入路径（用于测试环境或虚拟文件路径）
+   * @private
+   */
+  _resolveByPathInference(importSource, fromFile, allFiles) {
+    if (!importSource || !importSource.startsWith('.')) {
+      return null;
+    }
+
+    const fromDir = path.dirname(fromFile);
+    const resolved = normalizePath(path.resolve(fromDir, importSource));
+
+    // 尝试精确匹配
+    for (const ext of SOURCE_EXTENSIONS) {
+      const withExt = resolved + ext;
+      if (allFiles.has(withExt)) {
+        return withExt;
+      }
+    }
+
+    // 尝试 index 文件
+    for (const ext of SOURCE_EXTENSIONS) {
+      const indexPath = resolved + '/index' + ext;
+      if (allFiles.has(indexPath)) {
+        return indexPath;
+      }
+    }
+
+    // 尝试在已知文件中查找匹配
+    for (const knownFile of allFiles) {
+      if (knownFile === resolved || knownFile.startsWith(resolved + '.')) {
+        return knownFile;
+      }
+    }
+
+    // 如果仍然找不到，返回推导出的路径（即使不在 allFiles 中）
+    // 这对于处理变更文件不在 imports Map 中的情况很重要
+    // 默认使用 .js 扩展名
+    return resolved + '.js';
+  }
+
+  /**
+   * 添加模糊依赖（用于路径解析失败时的回退匹配）
+   * @private
+   */
+  _addFuzzyDependency(from, importSource) {
+    // 提取导入路径的文件名部分
+    const fileName = importSource.split('/').pop();
+    if (fileName && this.pathIndex.has(fileName)) {
+      const candidates = this.pathIndex.get(fileName);
+      for (const candidate of candidates) {
+        this.addDependency(from, candidate);
+      }
+    }
+  }
+
+  /**
+   * 查找模糊匹配
+   * @private
+   */
+  _findFuzzyMatches(normalizedPath) {
+    const matches = new Set();
+    const fileName = normalizedPath.split(PATH_SEP).pop();
+
+    if (fileName && this.pathIndex.has(fileName)) {
+      const candidates = this.pathIndex.get(fileName);
+      for (const candidate of candidates) {
+        if (candidate !== normalizedPath && candidate.endsWith(fileName)) {
+          matches.add(candidate);
+        }
+      }
+    }
+
+    return matches;
+  }
+}
+
+// 全局依赖图实例（支持跨调用缓存）
+let globalDependencyGraph = null;
+
+/**
+ * 获取或创建依赖图实例
+ * @returns {DependencyGraph} 依赖图实例
+ */
+function getDependencyGraph() {
+  if (!globalDependencyGraph) {
+    globalDependencyGraph = new DependencyGraph();
+  }
+  return globalDependencyGraph;
+}
+
+/**
+ * 重置依赖图（用于测试或强制重建）
+ */
+function resetDependencyGraph() {
+  if (globalDependencyGraph) {
+    globalDependencyGraph.clear();
+  }
+  globalDependencyGraph = null;
+}
+
 /**
  * 获取 Git 变更的文件列表
  * @param {string} srcDir - 源代码目录
  * @param {string} baseBranch - 基准分支（默认 main）
- * @returns {string[]} 变更的文件列表
+ * @returns {string[]|null} 变更的文件列表，失败返回 null
  */
 function getChangedFiles(srcDir, baseBranch = 'main') {
   try {
@@ -39,7 +359,7 @@ function getChangedFiles(srcDir, baseBranch = 'main') {
     return changedFiles.filter(file => {
       const ext = path.extname(file);
       return (
-        ['.js', '.jsx', '.ts', '.tsx', '.vue'].includes(ext) &&
+        SOURCE_EXTENSIONS.has(ext) &&
         (file.startsWith(srcPath + '/') || file.startsWith(srcPath + '\\'))
       );
     });
@@ -55,7 +375,7 @@ function getChangedFiles(srcDir, baseBranch = 'main') {
 /**
  * 获取未提交的变更文件
  * @param {string} srcDir - 源代码目录
- * @returns {string[]} 未提交变更的文件列表
+ * @returns {string[]|null} 未提交变更的文件列表
  */
 function getUncommittedChanges(srcDir) {
   try {
@@ -88,49 +408,55 @@ function getUncommittedChanges(srcDir) {
 }
 
 /**
- * 分析变更文件的依赖关系
+ * 分析变更文件的依赖关系（优化版本）
  * @param {string[]} changedFiles - 变更的文件列表
  * @param {Map} imports - 所有导入映射
+ * @param {string} [srcDir] - 源代码目录（可选，用于路径解析）
  * @returns {Set} 受影响的文件集合
  */
-function analyzeAffectedFiles(changedFiles, imports) {
-  const affectedFiles = new Set(changedFiles);
-
-  // 构建反向依赖图
-  const reverseDeps = new Map();
-
-  for (const [file, fileImports] of imports) {
-    for (const imp of fileImports) {
-      if (imp.source && imp.isInternal) {
-        const sourcePath = imp.source;
-        if (!reverseDeps.has(sourcePath)) {
-          reverseDeps.set(sourcePath, new Set());
-        }
-        reverseDeps.get(sourcePath).add(file);
-      }
-    }
+function analyzeAffectedFiles(changedFiles, imports, srcDir) {
+  if (!changedFiles || changedFiles.length === 0) {
+    return new Set();
   }
 
-  // BFS 查找所有受影响的文件
-  const queue = [...changedFiles];
-  while (queue.length > 0) {
-    const currentFile = queue.shift();
-    const normalizedPath = currentFile.replace(/\\/g, '/');
+  // 使用优化的依赖图
+  const depGraph = getDependencyGraph();
+  depGraph.buildFromImports(imports, srcDir);
+  
+  return depGraph.getAffectedFiles(changedFiles);
+}
 
-    // 查找依赖当前文件的其他文件
-    for (const [source, dependents] of reverseDeps) {
-      if (normalizedPath.includes(source.replace(/^\.\//, ''))) {
-        for (const dependent of dependents) {
-          if (!affectedFiles.has(dependent)) {
-            affectedFiles.add(dependent);
-            queue.push(dependent);
-          }
-        }
-      }
-    }
+/**
+ * 创建路径匹配集合（用于快速查找）
+ * @param {Set} affectedFiles - 受影响的文件集合
+ * @returns {Set} 规范化后的路径集合
+ */
+function createNormalizedSet(affectedFiles) {
+  const normalized = new Set();
+  for (const file of affectedFiles) {
+    normalized.add(normalizePath(file));
+  }
+  return normalized;
+}
+
+/**
+ * 通用过滤函数
+ * @param {Array} items - 待过滤的列表
+ * @param {Set} affectedFiles - 受影响的文件集合
+ * @param {Function} getPath - 获取文件路径的函数
+ * @returns {Array} 过滤后的列表
+ */
+function filterByAffectedFiles(items, affectedFiles, getPath) {
+  if (!items || items.length === 0) {
+    return [];
   }
 
-  return affectedFiles;
+  const normalizedAffected = createNormalizedSet(affectedFiles);
+  
+  return items.filter(item => {
+    const itemPath = normalizePath(getPath(item));
+    return normalizedAffected.has(itemPath);
+  });
 }
 
 /**
@@ -140,15 +466,7 @@ function analyzeAffectedFiles(changedFiles, imports) {
  * @returns {Array} 过滤后的未使用导出列表
  */
 function filterUnusedExports(unusedExports, affectedFiles) {
-  return unusedExports.filter(exp => {
-    const normalizedFile = exp.file.replace(/\\/g, '/');
-    for (const affected of affectedFiles) {
-      if (normalizedFile === affected.replace(/\\/g, '/')) {
-        return true;
-      }
-    }
-    return false;
-  });
+  return filterByAffectedFiles(unusedExports, affectedFiles, exp => exp.file);
 }
 
 /**
@@ -158,15 +476,7 @@ function filterUnusedExports(unusedExports, affectedFiles) {
  * @returns {Array} 过滤后的未使用组件列表
  */
 function filterUnusedComponents(unusedComponents, affectedFiles) {
-  return unusedComponents.filter(comp => {
-    const normalizedFile = comp.file.replace(/\\/g, '/');
-    for (const affected of affectedFiles) {
-      if (normalizedFile === affected.replace(/\\/g, '/')) {
-        return true;
-      }
-    }
-    return false;
-  });
+  return filterByAffectedFiles(unusedComponents, affectedFiles, comp => comp.file);
 }
 
 /**
@@ -177,16 +487,7 @@ function filterUnusedComponents(unusedComponents, affectedFiles) {
  */
 function filterUnusedToolFiles(unusedToolFiles, affectedFiles) {
   if (!unusedToolFiles) return [];
-
-  return unusedToolFiles.filter(file => {
-    const normalizedFile = file.replace(/\\/g, '/');
-    for (const affected of affectedFiles) {
-      if (normalizedFile === affected.replace(/\\/g, '/')) {
-        return true;
-      }
-    }
-    return false;
-  });
+  return filterByAffectedFiles(unusedToolFiles, affectedFiles, file => file);
 }
 
 /**
@@ -334,6 +635,7 @@ class IncrementalAnalyzer {
       maxAge: options.maxAge,
     });
     this.verbose = options.verbose || false;
+    this.dependencyGraph = new DependencyGraph();
   }
 
   initialize() {
@@ -347,6 +649,25 @@ class IncrementalAnalyzer {
 
   getUncommittedChanges() {
     return getUncommittedChanges(this.srcDir);
+  }
+
+  /**
+   * 分析受影响的文件（使用实例级依赖图）
+   * @param {string[]} changedFiles - 变更的文件列表
+   * @param {Map} imports - 导入映射
+   * @returns {Set} 受影响的文件集合
+   */
+  analyzeAffectedFiles(changedFiles, imports) {
+    this.dependencyGraph.buildFromImports(imports, this.srcDir);
+    return this.dependencyGraph.getAffectedFiles(changedFiles);
+  }
+
+  /**
+   * 获取依赖图统计信息
+   * @returns {Object} 统计信息
+   */
+  getDependencyStats() {
+    return this.dependencyGraph.getStats();
   }
 
   analyzeWithCache(filePaths, analyzer) {
@@ -395,4 +716,8 @@ module.exports = {
   clearCache,
   IncrementalAnalyzer,
   CacheManager,
+  DependencyGraph,
+  normalizePath,
+  getDependencyGraph,
+  resetDependencyGraph,
 };

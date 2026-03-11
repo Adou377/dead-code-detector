@@ -5,8 +5,8 @@
  */
 
 const { parentPort } = require('worker_threads');
-const fs = require('fs');
 const path = require('path');
+const { readFileContent } = require('../utils.js');
 
 let parser = null;
 let vueParser = null;
@@ -54,7 +54,14 @@ function parseFile(options) {
 
   try {
     const ext = path.extname(filePath);
-    const content = fs.readFileSync(filePath, 'utf-8');
+    const readResult = readFileContent(filePath);
+
+    if (!readResult.success) {
+      result.error = readResult.error.message;
+      return result;
+    }
+
+    const content = readResult.content;
 
     if (content.length > maxFileSize) {
       result.error = '文件过大，跳过解析';

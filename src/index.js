@@ -5,7 +5,7 @@
 const { DeadCodeFinder } = require('./detector.js');
 const { DeadCodeFinderAST } = require('./detector-ast.js');
 const { parseArgs, validateOptions } = require('./utils.js');
-const { loadConfig, mergeConfig } = require('./config.js');
+const { loadConfig, mergeConfig, validateConfig } = require('./config.js');
 const { DEFAULT_MODE } = require('./constants.js');
 const {
   getChangedFiles,
@@ -235,4 +235,5 @@ module.exports = {
   run,
   loadConfig,
   mergeConfig,
+  validateConfig,
 };

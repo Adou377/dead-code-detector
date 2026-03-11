@@ -6,6 +6,105 @@
 const fs = require('fs');
 const path = require('path');
 const { DEFAULT_MODE } = require('./constants.js');
+const { readJsonFile } = require('./utils.js');
+
+/**
+ * 配置项限制常量
+ */
+const CONFIG_LIMITS = {
+  MAX_FILE_SIZE_10MB: 10 * 1024 * 1024,
+  MAX_CONCURRENCY: 1000,
+  MIN_CONCURRENCY: 1,
+  MIN_FILE_SIZE: 0,
+};
+
+/**
+ * 验证 srcDir 配置项
+ * @param {string} srcDir - 源目录路径
+ * @param {string[]} errors - 错误信息数组
+ */
+function validateSrcDir(srcDir, errors) {
+  if (srcDir === undefined) return;
+
+  if (typeof srcDir !== 'string' || srcDir.trim() === '') {
+    errors.push('srcDir: 必须是非空字符串');
+    return;
+  }
+
+  const normalizedPath = path.normalize(srcDir);
+  if (normalizedPath.includes('\0')) {
+    errors.push('srcDir: 包含非法字符');
+    return;
+  }
+
+  if (!path.isAbsolute(normalizedPath) && !normalizedPath.startsWith('.')) {
+    try {
+      path.resolve(normalizedPath);
+    } catch {
+      errors.push(`srcDir: 路径格式无效: ${srcDir}`);
+      return;
+    }
+  }
+
+  if (!fs.existsSync(srcDir)) {
+    errors.push(`srcDir: 目录不存在 "${srcDir}"`);
+  }
+}
+
+/**
+ * 验证 extensions 配置项
+ * @param {string[]} extensions - 文件扩展名数组
+ * @param {string[]} errors - 错误信息数组
+ */
+function validateExtensions(extensions, errors) {
+  if (extensions === undefined) return;
+
+  if (!Array.isArray(extensions)) {
+    errors.push('extensions: 必须是数组');
+    return;
+  }
+
+  const invalidExts = extensions.filter(ext => typeof ext !== 'string' || !ext.startsWith('.'));
+  if (invalidExts.length > 0) {
+    errors.push(`extensions: 扩展名必须以 "." 开头，无效项: ${invalidExts.join(', ')}`);
+  }
+}
+
+/**
+ * 验证 concurrency 配置项
+ * @param {number} concurrency - 并发数
+ * @param {string[]} errors - 错误信息数组
+ */
+function validateConcurrency(concurrency, errors) {
+  if (concurrency === undefined) return;
+
+  if (typeof concurrency !== 'number' || !Number.isInteger(concurrency)) {
+    errors.push('concurrency: 必须是整数');
+    return;
+  }
+
+  if (concurrency < CONFIG_LIMITS.MIN_CONCURRENCY || concurrency > CONFIG_LIMITS.MAX_CONCURRENCY) {
+    errors.push(`concurrency: 必须在 ${CONFIG_LIMITS.MIN_CONCURRENCY} 到 ${CONFIG_LIMITS.MAX_CONCURRENCY} 之间`);
+  }
+}
+
+/**
+ * 验证 maxFileSize 配置项
+ * @param {number} maxFileSize - 最大文件大小
+ * @param {string[]} errors - 错误信息数组
+ */
+function validateMaxFileSize(maxFileSize, errors) {
+  if (maxFileSize === undefined) return;
+
+  if (typeof maxFileSize !== 'number' || isNaN(maxFileSize)) {
+    errors.push('maxFileSize: 必须是数字');
+    return;
+  }
+
+  if (maxFileSize < CONFIG_LIMITS.MIN_FILE_SIZE || maxFileSize > CONFIG_LIMITS.MAX_FILE_SIZE_10MB) {
+    errors.push(`maxFileSize: 必须在 ${CONFIG_LIMITS.MIN_FILE_SIZE} 到 10MB 之间`);
+  }
+}
 
 /**
  * 验证配置对象
@@ -13,50 +112,25 @@ const { DEFAULT_MODE } = require('./constants.js');
  * @throws {Error} 配置验证失败时抛出错误
  */
 function validateConfig(config) {
+  if (!config || typeof config !== 'object') {
+    throw new Error('配置选项必须是一个对象');
+  }
+
   const errors = [];
 
-  // 验证 srcDir: 检查目录是否存在
-  if (config.srcDir && !fs.existsSync(config.srcDir)) {
-    errors.push(`srcDir: 目录不存在 "${config.srcDir}"`);
-  }
+  validateSrcDir(config.srcDir, errors);
+  validateExtensions(config.extensions, errors);
+  validateConcurrency(config.concurrency, errors);
+  validateMaxFileSize(config.maxFileSize, errors);
 
-  // 验证 extensions: 检查是否为数组，且每个元素是有效的文件扩展名
-  if (config.extensions) {
-    if (!Array.isArray(config.extensions)) {
-      errors.push('extensions: 必须是数组');
-    } else {
-      const invalidExts = config.extensions.filter(ext => typeof ext !== 'string' || !ext.startsWith('.'));
-      if (invalidExts.length > 0) {
-        errors.push(`extensions: 扩展名必须以 "." 开头，无效项: ${invalidExts.join(', ')}`);
-      }
-    }
-  }
-
-  // 验证 ignoreDirs: 检查是否为数组
   if (config.ignoreDirs !== undefined && !Array.isArray(config.ignoreDirs)) {
     errors.push('ignoreDirs: 必须是数组');
   }
 
-  // 验证 mode: 检查值是否为 'ast' 或 'regex'
   if (config.mode && !['ast', 'regex'].includes(config.mode)) {
     errors.push(`mode: 必须是 "ast" 或 "regex"，当前值: "${config.mode}"`);
   }
 
-  // 验证 maxFileSize: 检查是否为正整数
-  if (config.maxFileSize !== undefined) {
-    if (!Number.isInteger(config.maxFileSize) || config.maxFileSize <= 0) {
-      errors.push(`maxFileSize: 必须是正整数，当前值: ${config.maxFileSize}`);
-    }
-  }
-
-  // 验证 concurrency: 检查是否为正整数
-  if (config.concurrency !== undefined) {
-    if (!Number.isInteger(config.concurrency) || config.concurrency <= 0) {
-      errors.push(`concurrency: 必须是正整数，当前值: ${config.concurrency}`);
-    }
-  }
-
-  // 如果有错误，抛出合并后的错误信息
   if (errors.length > 0) {
     throw new Error(`配置验证失败:\n  - ${errors.join('\n  - ')}`);
   }
@@ -91,10 +165,12 @@ function loadConfig(configPath) {
       try {
         let config;
         if (filePath.endsWith('.json')) {
-          const content = fs.readFileSync(filePath, 'utf-8');
-          config = JSON.parse(content);
+          const result = readJsonFile(filePath);
+          if (!result.success) {
+            throw result.error;
+          }
+          config = result.data;
         } else {
-          // 对于 JS 配置文件，清除缓存后重新 require
           delete require.cache[require.resolve(filePath)];
           config = require(filePath);
         }
@@ -193,4 +269,5 @@ module.exports = {
   loadConfig,
   mergeConfig,
   validateConfig,
+  CONFIG_LIMITS,
 };

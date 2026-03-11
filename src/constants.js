@@ -424,6 +424,24 @@ const REGEX_HOC_PATTERN = /\.(displayName|mixins|propTypes|defaultProps)/;
 const REGEX_REDUX_CONNECT = /\b(connect|mapStateToProps|mapDispatchToProps)\b/;
 const REGEX_REDUX_HOOKS = /\b(useSelector|useDispatch)\b/;
 
+// React 组件检测
+const REGEX_REACT_IMPORT = /import\s+.*\b(React|from\s+['"]react['"])/;
+const REGEX_JSX_EXTENSION = /jsx|tsx/;
+
+// React 函数组件模式
+const REGEX_FUNCTION_COMPONENT_PATTERNS = [
+  /export\s+(?:default\s+)?function\s+([A-Z]\w+)/,
+  /export\s+(?:default\s+)?const\s+([A-Z]\w+)\s*=\s*(?:\([^)]*\)|[a-zA-Z_$][\w$]*)\s*=>/,
+  /export\s+(?:default\s+)?const\s+([A-Z]\w+)\s*=\s*function\b/,
+  /export\s+default\s+(?:\([^)]*\)|[a-zA-Z_$][\w$]*)\s*=>/,
+];
+
+// React 类组件模式
+const REGEX_CLASS_COMPONENT_PATTERNS = [
+  /export\s+(?:default\s+)?class\s+([A-Z]\w+)\s+extends\s+(?:React\.)?Component/,
+  /export\s+(?:default\s+)?class\s+([A-Z]\w+)\s+extends\s+(?:React\.)?PureComponent/,
+];
+
 /**
  * 检查导入路径是否为内部路径（项目模块）
  * @param {string} importPath - 导入路径
@@ -483,5 +501,9 @@ module.exports = {
   REGEX_HOC_PATTERN,
   REGEX_REDUX_CONNECT,
   REGEX_REDUX_HOOKS,
+  REGEX_REACT_IMPORT,
+  REGEX_JSX_EXTENSION,
+  REGEX_FUNCTION_COMPONENT_PATTERNS,
+  REGEX_CLASS_COMPONENT_PATTERNS,
   isInternalImport,
 };

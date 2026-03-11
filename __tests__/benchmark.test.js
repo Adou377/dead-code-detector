@@ -5,6 +5,7 @@
  * - 文件扫描性能测试
  * - AST 解析性能测试
  * - 大项目模拟测试
+ * - 正则表达式性能测试
  */
 
 const fs = require('fs');
@@ -14,6 +15,9 @@ const { DeadCodeFinderAST } = require('../src/detector-ast.js');
 const { parse } = require('../src/parser/index.js');
 const { walkExports, walkImports } = require('../src/parser/walker.js');
 const { processParallel } = require('../src/utils.js');
+const { parseVueComponent } = require('../src/parser/vue.js');
+const { ExportExtractor } = require('../src/export-extractor.js');
+const { ImportExtractor } = require('../src/import-extractor.js');
 
 // 性能阈值配置（单位：毫秒）
 const THRESHOLDS = {
@@ -464,6 +468,96 @@ export function main() {
       }
       
       console.log('   ─────────────────────────────────────────');
+    });
+  });
+  
+  describe('正则表达式性能测试', () => {
+    const REGEX_THRESHOLDS = {
+      EXPORT_EXTRACT: 5,
+      IMPORT_EXTRACT: 5,
+      VUE_PARSE: 20,
+      CONTENT_CLEAN: 1,
+    };
+
+    test('导出提取性能测试', () => {
+      const content = generateJsContent(50, 25);
+      const iterations = 100;
+      
+      const startTime = Date.now();
+      for (let i = 0; i < iterations; i++) {
+        ExportExtractor.extractAll(content);
+      }
+      const avgDuration = (Date.now() - startTime) / iterations;
+      
+      console.log(`   导出提取平均耗时: ${avgDuration.toFixed(3)}ms`);
+      expect(avgDuration).toBeLessThan(REGEX_THRESHOLDS.EXPORT_EXTRACT);
+    });
+
+    test('导入提取性能测试', () => {
+      const content = generateJsContent(25, 50);
+      const iterations = 100;
+      
+      const startTime = Date.now();
+      for (let i = 0; i < iterations; i++) {
+        ImportExtractor.extractAll(content);
+      }
+      const avgDuration = (Date.now() - startTime) / iterations;
+      
+      console.log(`   导入提取平均耗时: ${avgDuration.toFixed(3)}ms`);
+      expect(avgDuration).toBeLessThan(REGEX_THRESHOLDS.IMPORT_EXTRACT);
+    });
+
+    test('Vue 组件解析性能测试', () => {
+      const content = generateVueContent('TestComponent', 'high');
+      const iterations = 50;
+      
+      const startTime = Date.now();
+      for (let i = 0; i < iterations; i++) {
+        parseVueComponent(content);
+      }
+      const avgDuration = (Date.now() - startTime) / iterations;
+      
+      console.log(`   Vue 组件解析平均耗时: ${avgDuration.toFixed(3)}ms`);
+      expect(avgDuration).toBeLessThan(REGEX_THRESHOLDS.VUE_PARSE);
+    });
+
+    test('正则表达式缓存效果验证', () => {
+      const testContent = `
+        export const foo = 1;
+        export const bar = 2;
+        export const baz = 3;
+        import { a } from './a.js';
+        import { b } from './b.js';
+      `;
+      
+      const iterations = 1000;
+      
+      const startTime = Date.now();
+      for (let i = 0; i < iterations; i++) {
+        ExportExtractor.extractAll(testContent);
+        ImportExtractor.extractAll(testContent);
+      }
+      const avgDuration = (Date.now() - startTime) / iterations;
+      
+      console.log(`   缓存正则表达式平均耗时: ${avgDuration.toFixed(4)}ms`);
+      expect(avgDuration).toBeLessThan(REGEX_THRESHOLDS.CONTENT_CLEAN);
+    });
+
+    test('大量导出名称处理性能', () => {
+      const names = Array.from({ length: 100 }, (_, i) => `exportName${i}`);
+      const content = names.map(name => `export function ${name}() { return '${name}'; }`).join('\n');
+      
+      const iterations = 50;
+      const startTime = Date.now();
+      
+      for (let i = 0; i < iterations; i++) {
+        const exports = ExportExtractor.extractAll(content);
+        expect(exports.length).toBeGreaterThan(0);
+      }
+      
+      const avgDuration = (Date.now() - startTime) / iterations;
+      console.log(`   处理 100 个导出平均耗时: ${avgDuration.toFixed(3)}ms`);
+      expect(avgDuration).toBeLessThan(REGEX_THRESHOLDS.EXPORT_EXTRACT * 4);
     });
   });
 });

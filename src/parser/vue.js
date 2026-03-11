@@ -20,14 +20,29 @@ const VUE3_MACROS = [
 ];
 
 /**
- * Vue 3 组合式函数模式
+ * Vue 3 组合式函数模式（预编译正则）
  */
 const COMPOSABLE_PATTERNS = [
-  /^use[A-Z]/, // useXxx
-  /^fetch[A-Z]/, // fetchXxx
-  /^get[A-Z]/, // getXxx
-  /^load[A-Z]/, // loadXxx
+  /^use[A-Z]/,
+  /^fetch[A-Z]/,
+  /^get[A-Z]/,
+  /^load[A-Z]/,
 ];
+
+/**
+ * 预编译的 Vue 模板解析正则表达式
+ * 避免在每次调用函数时重复创建
+ */
+const VUE_TEMPLATE_REGEX = {
+  scriptSetup: /<script\s+setup/i,
+  template: /<template(?:\s[^>]*)?>([\s\S]*?)<\/template>/i,
+  script: /<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/i,
+  svgTag: /<svg[\s>]/i,
+  svgContent: /<svg[\s\S]*?<\/svg>/i,
+  pascalComponent: /<([A-Z][a-zA-Z0-9]*(?:-[a-zA-Z0-9]+)*)/g,
+  kebabComponent: /<([a-z][a-z0-9]*-[a-z0-9-]+)/gi,
+  pascalCaseTest: /^[A-Z]/,
+};
 
 /**
  * 从 script setup 中提取 Vue 宏
@@ -106,23 +121,20 @@ function extractTemplateInfo(templateContent) {
 
   info.hasTemplate = true;
 
-  // 检测是否为 SVG 图标组件
-  const svgMatch = templateContent.match(/<svg[\s>]/i);
+  VUE_TEMPLATE_REGEX.svgTag.lastIndex = 0;
+  const svgMatch = templateContent.match(VUE_TEMPLATE_REGEX.svgTag);
   if (svgMatch) {
-    // 检查 SVG 是否为主要内容（SVG 图标组件通常以 SVG 为根元素或主要内容）
-    const svgContent = templateContent.match(/<svg[\s\S]*?<\/svg>/i);
+    VUE_TEMPLATE_REGEX.svgContent.lastIndex = 0;
+    const svgContent = templateContent.match(VUE_TEMPLATE_REGEX.svgContent);
     if (svgContent && svgContent[0].length > templateContent.length * 0.5) {
       info.isSvgComponent = true;
     }
   }
 
-  // 提取 PascalCase 组件标签（自定义组件）
-  // 匹配 <ComponentName 或 <ComponentName:slot 等模式
-  const componentTagRegex = /<([A-Z][a-zA-Z0-9]*(?:-[a-zA-Z0-9]+)*)/g;
+  VUE_TEMPLATE_REGEX.pascalComponent.lastIndex = 0;
   let match;
-  while ((match = componentTagRegex.exec(templateContent)) !== null) {
+  while ((match = VUE_TEMPLATE_REGEX.pascalComponent.exec(templateContent)) !== null) {
     const componentName = match[1];
-    // 排除 SVG 相关标签（如 Svg, Path 等虽然首字母大写但不是组件引用）
     const svgTags = ['Svg', 'Path', 'Circle', 'Rect', 'Line', 'Polygon', 'Polyline', 'Ellipse', 'G', 'Defs', 'Use', 'Symbol', 'Text', 'Tspan', 'LinearGradient', 'RadialGradient', 'Stop', 'ClipPath', 'Mask', 'Pattern', 'Image', 'ForeignObject'];
     if (!svgTags.includes(componentName)) {
       if (!info.components.includes(componentName)) {
@@ -131,12 +143,9 @@ function extractTemplateInfo(templateContent) {
     }
   }
 
-  // 提取 kebab-case 组件引用（通过组件名推断 PascalCase）
-  // 例如 <my-component 可能对应 MyComponent
-  const kebabComponentRegex = /<([a-z][a-z0-9]*-[a-z0-9-]+)/gi;
-  while ((match = kebabComponentRegex.exec(templateContent)) !== null) {
+  VUE_TEMPLATE_REGEX.kebabComponent.lastIndex = 0;
+  while ((match = VUE_TEMPLATE_REGEX.kebabComponent.exec(templateContent)) !== null) {
     const kebabName = match[1];
-    // 转换为 PascalCase
     const pascalName = kebabName
       .split('-')
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
@@ -169,20 +178,19 @@ function parseVueComponent(content) {
     fileName: '',
   };
 
-  // 检查是否有 script setup
-  const scriptSetupMatch = content.match(/<script\s+setup/i);
+  VUE_TEMPLATE_REGEX.scriptSetup.lastIndex = 0;
+  const scriptSetupMatch = content.match(VUE_TEMPLATE_REGEX.scriptSetup);
   if (scriptSetupMatch) {
     result.hasScriptSetup = true;
   }
 
-  // 检查并提取模板信息
-  const templateMatch = content.match(/<template(?:\s[^>]*)?>([\s\S]*?)<\/template>/i);
+  VUE_TEMPLATE_REGEX.template.lastIndex = 0;
+  const templateMatch = content.match(VUE_TEMPLATE_REGEX.template);
   const templateContent = templateMatch ? templateMatch[1] : null;
   const templateInfo = extractTemplateInfo(templateContent);
   result.hasTemplate = templateInfo.hasTemplate;
   result.isSvgComponent = templateInfo.isSvgComponent;
 
-  // 将模板中引用的组件添加到结果中
   if (templateInfo.components.length > 0) {
     templateInfo.components.forEach(comp => {
       if (!result.components.includes(comp)) {
@@ -191,15 +199,12 @@ function parseVueComponent(content) {
     });
   }
 
-  // 检查 script 块
-  const scriptMatch = content.match(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/i);
+  VUE_TEMPLATE_REGEX.script.lastIndex = 0;
+  const scriptMatch = content.match(VUE_TEMPLATE_REGEX.script);
 
-  // 如果没有 script 块但有 template 块，识别为纯模板组件
-  // 注意：纯模板组件是有效的 Vue 文件，但不追踪为组件（没有可追踪的导出）
   if (!scriptMatch) {
     if (result.hasTemplate) {
       result.isPureTemplateComponent = true;
-      // 不设置 isComponent = true，因为纯模板组件没有可追踪的导出
     }
     return result;
   }
@@ -208,21 +213,15 @@ function parseVueComponent(content) {
   const astResult = parseJs(scriptContent, 'temp.vue');
 
   if (!astResult.success || !astResult.ast) {
-    // AST 解析失败，不追踪为组件
     return result;
   }
 
-  // 提取 Vue 宏
   const macros = extractVueMacros(scriptContent, astResult.ast);
   result.props = macros.defineProps;
   result.emits = macros.defineEmits;
   result.exposed = macros.defineExpose;
   result.composables = macros.composables || [];
 
-  // 通过以下方式判断是否为组件：
-  // 1. 从 vue 导入的组件注册
-  // 2. defineProps 的组件类型
-  // 3. PascalCase 函数定义
   const componentVisitor = {
     ImportDeclaration(path) {
       const source = path.get('source').node.value;
@@ -232,8 +231,10 @@ function parseVueComponent(content) {
           if (specifier.isImportSpecifier()) {
             const imported = specifier.get('imported').node.name;
             if (imported.startsWith('on') || VUE3_MACROS.includes(imported)) {
-              // Vue API，不是组件
-            } else if (COMPOSABLE_PATTERNS.some(p => p.test(imported))) {
+            } else if (COMPOSABLE_PATTERNS.some(p => {
+              p.lastIndex = 0;
+              return p.test(imported);
+            })) {
               result.composables.push(imported);
             }
           }
@@ -244,20 +245,25 @@ function parseVueComponent(content) {
       const id = path.get('id');
       if (id.isIdentifier()) {
         const name = id.node.name;
-        // PascalCase 变量可能是组件
-        if (/^[A-Z]/.test(name) && !VUE3_MACROS.includes(name)) {
+        VUE_TEMPLATE_REGEX.pascalCaseTest.lastIndex = 0;
+        if (VUE_TEMPLATE_REGEX.pascalCaseTest.test(name) && !VUE3_MACROS.includes(name)) {
           result.components.push(name);
         }
-        // 组合式函数模式
-        if (COMPOSABLE_PATTERNS.some(p => p.test(name))) {
+        if (COMPOSABLE_PATTERNS.some(p => {
+          p.lastIndex = 0;
+          return p.test(name);
+        })) {
           result.composables.push(name);
         }
       }
     },
     FunctionDeclaration(path) {
       const name = path.get('id').node?.name;
-      if (name && /^[A-Z]/.test(name)) {
-        result.components.push(name);
+      if (name) {
+        VUE_TEMPLATE_REGEX.pascalCaseTest.lastIndex = 0;
+        if (VUE_TEMPLATE_REGEX.pascalCaseTest.test(name)) {
+          result.components.push(name);
+        }
       }
     },
     ExportDefaultDeclaration() {
@@ -268,11 +274,6 @@ function parseVueComponent(content) {
   const traverse = require('@babel/traverse').default;
   traverse(astResult.ast, componentVisitor);
 
-  // 判断是否为组件的条件：
-  // 1. 有 script setup
-  // 2. 有组件定义
-  // 3. 有组合式函数
-  // 4. 有 template 块（纯模板组件）
   if (result.hasScriptSetup || result.components.length > 0 || result.composables.length > 0 || result.hasTemplate) {
     result.isComponent = true;
   }

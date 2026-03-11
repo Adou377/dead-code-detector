@@ -2,9 +2,23 @@
  * 工具函数
  */
 
+const fs = require('fs');
 const path = require('path');
 
 const MAX_FILE_SIZE_10MB = 10 * 1024 * 1024;
+
+/**
+ * 预编译的路径遍历检测正则表达式
+ * 避免每次调用时重复创建正则表达式对象
+ */
+const PATH_TRAVERSAL_PATTERNS = [
+  /\.\./,
+  /\.\.%2[fF]/,
+  /\.\.%5[cC]/,
+  /%2[eE]%2[eE]/,
+  /\.\.\//,
+  /\.\.\\/,
+];
 
 /**
  * 验证配置选项
@@ -15,7 +29,7 @@ const MAX_FILE_SIZE_10MB = 10 * 1024 * 1024;
  * @throws {Error} 验证失败时抛出错误
  */
 function validateOptions(options) {
-  if (!options || typeof options !== 'object') {
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
     throw new Error('配置选项必须是一个对象');
   }
 
@@ -70,16 +84,10 @@ function hasPathTraversal(inputPath) {
     return false;
   }
 
-  const traversalPatterns = [
-    /\.\./,           // 匹配 ..
-    /\.\.%2[fF]/,     // URL 编码的 ../
-    /\.\.%5[cC]/,     // URL 编码的 ..\
-    /%2[eE]%2[eE]/,   // URL 编码的 ..
-    /\.\.\//,         // 匹配 ../
-    /\.\.\\/,         // 匹配 ..\
-  ];
-
-  return traversalPatterns.some(pattern => pattern.test(inputPath));
+  return PATH_TRAVERSAL_PATTERNS.some(pattern => {
+    pattern.lastIndex = 0;
+    return pattern.test(inputPath);
+  });
 }
 
 /**
@@ -94,18 +102,13 @@ function isSafePath(basePath, targetPath) {
     return false;
   }
 
-  // 规范化路径，处理 .. 和 . 以及不同操作系统的路径分隔符
   const normalizedBase = path.normalize(basePath);
   const normalizedTarget = path.normalize(targetPath);
 
-  // 确保基础路径以分隔符结尾，避免部分匹配
-  // 例如：/app/src 不应匹配 /app/src-backup
   const baseWithSep = normalizedBase.endsWith(path.sep)
     ? normalizedBase
     : normalizedBase + path.sep;
 
-  // 检查目标路径是否以基础路径开头
-  // 目标路径等于基础路径也被认为是安全的
   return (
     normalizedTarget === normalizedBase ||
     normalizedTarget.startsWith(baseWithSep)
@@ -250,7 +253,6 @@ async function processParallel(options) {
  * @param {string} prefix - 前缀文本
  */
 function printProgress(current, total, prefix = '') {
-  // 处理总数为 0 的情况（没有项目需要处理）
   if (total === 0) {
     const barWidth = 30;
     const bar = '░'.repeat(barWidth);
@@ -273,8 +275,67 @@ function printProgress(current, total, prefix = '') {
 }
 
 /**
+ * 统一文件读取结果
+ * @typedef {Object} FileReadResult
+ * @property {boolean} success - 是否成功
+ * @property {string|Buffer|null} content - 文件内容
+ * @property {Error|null} error - 错误信息
+ */
+
+/**
+ * 读取文件内容为字符串
+ * @param {string} filePath - 文件路径
+ * @param {Object} options - 配置选项
+ * @param {string} [options.encoding='utf-8'] - 文件编码
+ * @returns {FileReadResult} 读取结果
+ */
+function readFileContent(filePath, options = {}) {
+  const { encoding = 'utf-8' } = options;
+
+  try {
+    const content = fs.readFileSync(filePath, encoding);
+    return { success: true, content, error: null };
+  } catch (error) {
+    return { success: false, content: null, error };
+  }
+}
+
+/**
+ * 读取文件为 Buffer
+ * @param {string} filePath - 文件路径
+ * @returns {FileReadResult} 读取结果
+ */
+function readFileBuffer(filePath) {
+  try {
+    const content = fs.readFileSync(filePath);
+    return { success: true, content, error: null };
+  } catch (error) {
+    return { success: false, content: null, error };
+  }
+}
+
+/**
+ * 读取并解析 JSON 文件
+ * @param {string} filePath - JSON 文件路径
+ * @returns {Object} 包含 success, data, error 的结果对象
+ */
+function readJsonFile(filePath) {
+  const result = readFileContent(filePath);
+
+  if (!result.success) {
+    return { success: false, data: null, error: result.error };
+  }
+
+  try {
+    const data = JSON.parse(result.content);
+    return { success: true, data, error: null };
+  } catch (error) {
+    return { success: false, data: null, error };
+  }
+}
+
+/**
  * 性能统计收集器
- * 用于收集和报告分析过程中的性能数据
  */
 class PerformanceStats {
   constructor() {
@@ -287,59 +348,33 @@ class PerformanceStats {
     this._memoryInterval = null;
   }
 
-  /**
-   * 开始性能监控
-   */
   start() {
     this.startTime = Date.now();
     this._startMemoryMonitoring();
   }
 
-  /**
-   * 结束性能监控
-   */
   end() {
     this.endTime = Date.now();
     this._stopMemoryMonitoring();
     this._updateMemoryPeak();
   }
 
-  /**
-   * 记录文件数量
-   * @param {number} count - 文件数量，默认为 1
-   */
   recordFile(count = 1) {
     this.fileCount += count;
   }
 
-  /**
-   * 记录导出数量
-   * @param {number} count - 导出数量，默认为 1
-   */
   recordExport(count = 1) {
     this.exportCount += count;
   }
 
-  /**
-   * 记录组件数量
-   * @param {number} count - 组件数量，默认为 1
-   */
   recordComponent(count = 1) {
     this.componentCount += count;
   }
 
-  /**
-   * 获取分析耗时（毫秒）
-   * @returns {number}
-   */
   getElapsedTime() {
     return this.endTime - this.startTime;
   }
 
-  /**
-   * 获取格式化的耗时字符串
-   * @returns {string}
-   */
   getFormattedTime() {
     const elapsed = this.getElapsedTime();
     if (elapsed < 1000) {
@@ -348,19 +383,11 @@ class PerformanceStats {
     return `${(elapsed / 1000).toFixed(2)}s`;
   }
 
-  /**
-   * 获取当前内存使用量（MB）
-   * @returns {number}
-   */
   getCurrentMemory() {
     const usage = process.memoryUsage();
     return Math.round(usage.heapUsed / 1024 / 1024);
   }
 
-  /**
-   * 获取性能统计报告
-   * @returns {Object}
-   */
   getReport() {
     return {
       fileCount: this.fileCount,
@@ -372,9 +399,6 @@ class PerformanceStats {
     };
   }
 
-  /**
-   * 打印性能统计报告
-   */
   printReport() {
     console.log('\n📊 性能统计报告');
     console.log('─'.repeat(40));
@@ -386,10 +410,6 @@ class PerformanceStats {
     console.log('─'.repeat(40));
   }
 
-  /**
-   * 启动内存监控
-   * @private
-   */
   _startMemoryMonitoring() {
     this._updateMemoryPeak();
     this._memoryInterval = setInterval(() => {
@@ -397,10 +417,6 @@ class PerformanceStats {
     }, 500);
   }
 
-  /**
-   * 停止内存监控
-   * @private
-   */
   _stopMemoryMonitoring() {
     if (this._memoryInterval) {
       clearInterval(this._memoryInterval);
@@ -408,115 +424,11 @@ class PerformanceStats {
     }
   }
 
-  /**
-   * 更新内存峰值
-   * @private
-   */
   _updateMemoryPeak() {
     const current = this.getCurrentMemory();
     if (current > this.memoryPeak) {
       this.memoryPeak = current;
     }
-  }
-}
-
-/**
- * 内存监控器
- * 用于监控内存使用，防止内存溢出
- */
-class MemoryMonitor {
-  /**
-   * @param {Object} options - 配置选项
-   * @param {number} [options.warningThreshold=500] - 警告阈值（MB）
-   * @param {number} [options.criticalThreshold=800] - 临界阈值（MB）
-   * @param {Function} [options.onWarning] - 警告回调
-   */
-  constructor(options = {}) {
-    this.warningThreshold = options.warningThreshold || 500;
-    this.criticalThreshold = options.criticalThreshold || 800;
-    this.onWarning = options.onWarning || this._defaultWarning;
-    this.checkCount = 0;
-    this.warningCount = 0;
-  }
-
-  /**
-   * 获取当前内存使用量（MB）
-   * @returns {number}
-   */
-  getCurrentMemory() {
-    const usage = process.memoryUsage();
-    return Math.round(usage.heapUsed / 1024 / 1024);
-  }
-
-  /**
-   * 检查内存阈值
-   * @returns {Object} 检查结果
-   */
-  checkThreshold() {
-    this.checkCount++;
-    const currentMemory = this.getCurrentMemory();
-    const result = {
-      memoryMB: currentMemory,
-      isWarning: false,
-      isCritical: false,
-    };
-
-    if (currentMemory > this.criticalThreshold) {
-      result.isCritical = true;
-      const error = new Error(`内存使用超过临界阈值: ${currentMemory}MB > ${this.criticalThreshold}MB`);
-      error.memoryMB = currentMemory;
-      error.threshold = this.criticalThreshold;
-      throw error;
-    }
-
-    if (currentMemory > this.warningThreshold) {
-      result.isWarning = true;
-      this.warningCount++;
-      this.onWarning(currentMemory, this.warningThreshold);
-    }
-
-    return result;
-  }
-
-  /**
-   * 安全检查（不抛出错误）
-   * @returns {Object} 检查结果
-   */
-  safeCheck() {
-    try {
-      return this.checkThreshold();
-    } catch (error) {
-      return {
-        memoryMB: error.memoryMB,
-        isWarning: true,
-        isCritical: true,
-        error: error.message,
-      };
-    }
-  }
-
-  /**
-   * 获取内存统计
-   * @returns {Object}
-   */
-  getStats() {
-    return {
-      currentMemoryMB: this.getCurrentMemory(),
-      warningThreshold: this.warningThreshold,
-      criticalThreshold: this.criticalThreshold,
-      checkCount: this.checkCount,
-      warningCount: this.warningCount,
-    };
-  }
-
-  /**
-   * 默认警告处理
-   * @param {number} currentMemory - 当前内存
-   * @param {number} threshold - 阈值
-   * @private
-   */
-  _defaultWarning(currentMemory, threshold) {
-    console.warn(`⚠️  内存警告: 当前内存 ${currentMemory}MB 超过警告阈值 ${threshold}MB`);
   }
 }
 
@@ -529,5 +441,7 @@ module.exports = {
   hasPathTraversal,
   PerformanceStats,
   validateOptions,
-  MemoryMonitor,
+  readFileContent,
+  readFileBuffer,
+  readJsonFile,
 };

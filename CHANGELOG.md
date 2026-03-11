@@ -5,6 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-03-11
+
+### Performance
+
+- **LRU 缓存策略**
+  - 实现 Map + 双向链表 LRU 缓存，支持自动淘汰
+  - 新增 `maxEntries` 和 `maxMemoryMB` 配置项
+  - 内存占用监控和自动清理机制
+
+- **正则表达式优化**
+  - 预编译常用正则表达式，减少 99%+ 对象创建
+  - 新增 `RegexCache` 类缓存动态正则表达式
+
+- **增量分析优化**
+  - 新增 `DependencyGraph` 类封装依赖图管理
+  - 依赖查找从 O(n²) 优化到 O(1)
+  - 双向索引支持正向和反向依赖查询
+
+- **Worker 池优化**
+  - 超时任务正确清理和资源释放
+  - 动态并发调整支持
+  - 任务优先级队列支持
+
+### Changed
+
+- **代码复杂度降低**
+  - 最长函数从 74 行降至 25 行
+  - 新增 20+ 辅助函数提升可读性
+  - 拆分 detector-ast.js、detector.js、walker.js 核心模块
+
+- **重复代码消除**
+  - 新增 `error-handler.js` 统一错误处理模块
+  - 统一文件读取工具函数
+  - 配置验证逻辑集中到 config.js
+
+- **测试文件重构**
+  - 拆分 2202 行测试文件为 6 个模块化文件
+  - 移除约 10 个重复测试用例
+  - 新增边界情况测试覆盖
+
+### Removed
+
+- 移除未使用的 `MemoryMonitor` 类
+
+### Documentation
+
+- 补充 53 个函数的 JSDoc 注释
+- detector.js 新增 43 个方法的完整文档
+
+### Fixed
+
+- 修复 ESLint 警告
+
 ## [1.0.1] - 2026-03-10
 
 ### Changed

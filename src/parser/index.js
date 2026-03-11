@@ -11,6 +11,14 @@ const { createError } = require('../errors');
 const { defaultLogger } = require('../logger');
 
 /**
+ * 预编译的 Vue 文件解析正则表达式
+ */
+const VUE_SCRIPT_REGEX = {
+  script: /<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/i,
+  scriptSetup: /<script\s+setup(?:\s[^>]*)?>([\s\S]*?)<\/script>/i,
+};
+
+/**
  * 解析 JS/TS/JSX 内容为 AST
  * @param {string} content - 文件内容
  * @param {string} filePath - 文件路径（用于扩展名检测）
@@ -24,7 +32,6 @@ function parseJs(content, filePath) {
     plugins.push('typescript');
   }
 
-  // Add class properties and decorators support
   plugins.push('classProperties');
   plugins.push('decorators-legacy');
 
@@ -64,14 +71,15 @@ function parseJs(content, filePath) {
  * @returns {Object} 带有脚本 AST 的解析结果
  */
 function parseVue(content, filePath) {
-  // 提取 script 和 script setup 块
-  const scriptMatch = content.match(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/i);
-  const scriptSetupMatch = content.match(/<script\s+setup(?:\s[^>]*)?>([\s\S]*?)<\/script>/i);
+  VUE_SCRIPT_REGEX.script.lastIndex = 0;
+  VUE_SCRIPT_REGEX.scriptSetup.lastIndex = 0;
+  
+  const scriptMatch = content.match(VUE_SCRIPT_REGEX.script);
+  const scriptSetupMatch = content.match(VUE_SCRIPT_REGEX.scriptSetup);
 
   let scriptContent = '';
   let isScriptSetup = false;
 
-  // 优先匹配 script setup 块
   if (scriptSetupMatch) {
     scriptContent = scriptSetupMatch[1];
     isScriptSetup = true;
@@ -79,7 +87,6 @@ function parseVue(content, filePath) {
     scriptContent = scriptMatch[1];
   }
 
-  // 无脚本块：纯模板组件，属于合法情况
   if (!scriptContent || scriptContent.trim() === '') {
     return {
       ast: null,
@@ -88,7 +95,6 @@ function parseVue(content, filePath) {
     };
   }
 
-  // 有脚本块：解析脚本内容
   const result = parseJs(scriptContent, filePath);
 
   if (result.success) {
