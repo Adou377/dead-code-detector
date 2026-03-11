@@ -89,11 +89,10 @@ class DeadCodeFinder extends DeadCodeFinderBase {
   parseVueFile(relativePath, filePath, content) {
     const fileName = path.basename(filePath, '.vue');
     if (fileName !== 'index') {
-      this.components.set(relativePath, new ComponentItem(
-        fileName,
-        false,
-        fileName.startsWith('The') || fileName.startsWith('App')
-      ));
+      this.components.set(
+        relativePath,
+        new ComponentItem(fileName, false, fileName.startsWith('The') || fileName.startsWith('App'))
+      );
     }
     this.parseJsContent(relativePath, content);
   }
@@ -461,11 +460,7 @@ class DeadCodeFinder extends DeadCodeFinderBase {
     const elapsed = (Date.now() - startTime) / 1000;
     Reporter.printAnalysisComplete(elapsed);
 
-    return new AnalysisResult(
-      this.unusedExports,
-      this.unusedComponents,
-      this.unusedToolFiles
-    );
+    return new AnalysisResult(this.unusedExports, this.unusedComponents, this.unusedToolFiles);
   }
 
   /**
@@ -491,7 +486,9 @@ class DeadCodeFinder extends DeadCodeFinderBase {
         if ((!usedBy || usedBy.size === 0) && !isSideEffectImported) {
           const localUsage = await this.countLocalUsage(file, exp.name);
           if (localUsage === 0) {
-            this.unusedExports.push(new UnusedExportItem(file, exp.name, exp.type, exp.line, exp.code, exp.source));
+            this.unusedExports.push(
+              new UnusedExportItem(file, exp.name, exp.type, exp.line, exp.code, exp.source)
+            );
           }
         }
       }
@@ -561,7 +558,10 @@ class DeadCodeFinder extends DeadCodeFinderBase {
    * @returns {Promise<void>}
    */
   async detectUnusedComponents(testImports = new Map()) {
-    const componentUsages = this.componentDetector.collectComponentUsages(this.imports, testImports);
+    const componentUsages = this.componentDetector.collectComponentUsages(
+      this.imports,
+      testImports
+    );
 
     console.log('   构建组件标签索引...');
     const componentTagIndex = this.componentDetector.buildComponentTagIndexFromFileContents(
@@ -591,7 +591,6 @@ class DeadCodeFinder extends DeadCodeFinderBase {
       unusedToolFiles: this.unusedToolFiles,
     });
   }
-
 
   /**
    * 自动修复未使用的代码

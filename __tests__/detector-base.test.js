@@ -217,7 +217,7 @@ describe('DeadCodeFinderBase', () => {
       const finder = new DeadCodeFinderBase({
         extensions: ['.js'],
         srcDir: testDir,
-        ignoreDirs: ['node_modules']
+        ignoreDirs: ['node_modules'],
       });
       const files = await finder.scanFiles(testDir);
       expect(files.some(f => f.includes('node_modules'))).toBe(false);
@@ -264,7 +264,7 @@ describe('DeadCodeFinderBase', () => {
       );
 
       const finder = new DeadCodeFinderBase({ srcDir });
-      finder.extractImportsFromContent = (content) => {
+      finder.extractImportsFromContent = content => {
         const match = content.match(/import\s+\{\s*(\w+)\s*\}\s+from/);
         if (match) {
           return [{ name: match[1], isInternal: true }];
@@ -285,7 +285,7 @@ describe('DeadCodeFinderBase', () => {
       );
 
       const finder = new DeadCodeFinderBase({ srcDir });
-      finder.extractImportsFromContent = (content) => {
+      finder.extractImportsFromContent = content => {
         const match = content.match(/import\s+\{\s*(\w+)\s*\}\s+from/);
         if (match) {
           return [{ name: match[1], isInternal: true }];

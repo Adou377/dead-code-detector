@@ -12,7 +12,7 @@ export interface UserInterface {
 
 export enum Status {
   Active = 'active',
-  Inactive = 'inactive'
+  Inactive = 'inactive',
 }
 
 export namespace UserNamespace {

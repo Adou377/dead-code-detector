@@ -3,7 +3,7 @@
  *
  * 支持基于 Git 变更的增量检测，提升大型项目的分析速度
  * 支持持久化缓存，复用未变更文件的分析结果
- * 
+ *
  * 优化版本：
  * - 使用预构建的反向依赖图索引
  * - 统一路径规范化处理
@@ -84,17 +84,17 @@ class DependencyGraph {
 
     for (const [file, fileImports] of imports) {
       const normalizedFile = normalizePath(file);
-      
+
       for (const imp of fileImports) {
         if (imp.source && imp.isInternal) {
           // 尝试多种解析策略
           let resolvedPath = this._resolveImportPath(imp.source, file, srcDir);
-          
+
           // 如果文件系统解析失败，尝试路径推导
           if (!resolvedPath) {
             resolvedPath = this._resolveByPathInference(imp.source, file, allFiles);
           }
-          
+
           if (resolvedPath) {
             this.addDependency(normalizedFile, resolvedPath);
           } else {
@@ -172,8 +172,10 @@ class DependencyGraph {
   getStats() {
     return {
       totalFiles: this.forwardDeps.size,
-      totalDependencies: Array.from(this.forwardDeps.values())
-        .reduce((sum, deps) => sum + deps.size, 0),
+      totalDependencies: Array.from(this.forwardDeps.values()).reduce(
+        (sum, deps) => sum + deps.size,
+        0
+      ),
       reverseDepsCount: this.reverseDeps.size,
     };
   }
@@ -186,7 +188,7 @@ class DependencyGraph {
     // 提取文件名部分用于索引
     const parts = normalizedPath.split(PATH_SEP);
     const fileName = parts[parts.length - 1];
-    
+
     if (!this.pathIndex.has(fileName)) {
       this.pathIndex.set(fileName, new Set());
     }
@@ -205,7 +207,7 @@ class DependencyGraph {
     try {
       const fromDir = path.dirname(fromFile);
       const resolved = path.resolve(fromDir, importSource);
-      
+
       // 尝试各种可能的扩展名
       const extensions = ['.js', '.jsx', '.ts', '.tsx', '.vue'];
       for (const ext of extensions) {
@@ -214,7 +216,7 @@ class DependencyGraph {
           return normalizePath(withExt);
         }
       }
-      
+
       // 尝试 index 文件
       for (const ext of extensions) {
         const indexPath = path.join(resolved, 'index' + ext);
@@ -523,18 +525,18 @@ function getUncommittedChanges(srcDir) {
   }
 
   try {
-    const changedFiles = execSync(
-      'git diff --name-only --diff-filter=ACMR',
-      { cwd: srcDir, encoding: 'utf-8' }
-    )
+    const changedFiles = execSync('git diff --name-only --diff-filter=ACMR', {
+      cwd: srcDir,
+      encoding: 'utf-8',
+    })
       .trim()
       .split('\n')
       .filter(file => file.length > 0);
 
-    const stagedFiles = execSync(
-      'git diff --name-only --diff-filter=ACMR --cached',
-      { cwd: srcDir, encoding: 'utf-8' }
-    )
+    const stagedFiles = execSync('git diff --name-only --diff-filter=ACMR --cached', {
+      cwd: srcDir,
+      encoding: 'utf-8',
+    })
       .trim()
       .split('\n')
       .filter(file => file.length > 0);
@@ -560,7 +562,7 @@ function analyzeAffectedFiles(changedFiles, imports, srcDir) {
   // 使用优化的依赖图
   const depGraph = getDependencyGraph();
   depGraph.buildFromImports(imports, srcDir);
-  
+
   return depGraph.getAffectedFiles(changedFiles);
 }
 
@@ -590,7 +592,7 @@ function filterByAffectedFiles(items, affectedFiles, getPath) {
   }
 
   const normalizedAffected = createNormalizedSet(affectedFiles);
-  
+
   return items.filter(item => {
     const itemPath = normalizePath(getPath(item));
     return normalizedAffected.has(itemPath);
@@ -767,11 +769,13 @@ class IncrementalAnalyzer {
   constructor(options = {}) {
     this.srcDir = options.srcDir || process.cwd();
     this.baseBranch = options.baseBranch || 'main';
-    this.cacheManager = options.cacheManager || createIncrementalCache({
-      projectRoot: this.srcDir,
-      cacheDir: options.cacheDir,
-      maxAge: options.maxAge,
-    });
+    this.cacheManager =
+      options.cacheManager ||
+      createIncrementalCache({
+        projectRoot: this.srcDir,
+        cacheDir: options.cacheDir,
+        maxAge: options.maxAge,
+      });
     this.verbose = options.verbose || false;
     this.dependencyGraph = new DependencyGraph();
   }

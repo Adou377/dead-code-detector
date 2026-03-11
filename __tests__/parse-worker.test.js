@@ -413,7 +413,7 @@ export const regularExport = true;
 
     test('应该处理动态导入', () => {
       const testFile = path.join(testDir, 'dynamic.js');
-      fs.writeFileSync(testFile, 'const mod = import(\'./other\'); export { mod };');
+      fs.writeFileSync(testFile, "const mod = import('./other'); export { mod };");
 
       const result = parseFile({
         filePath: testFile,
@@ -426,7 +426,7 @@ export const regularExport = true;
 
     test('应该处理重新导出', () => {
       const testFile = path.join(testDir, 'reexport.js');
-      fs.writeFileSync(testFile, 'export { foo } from \'./utils\'; export * from \'./lib\';');
+      fs.writeFileSync(testFile, "export { foo } from './utils'; export * from './lib';");
 
       const result = parseFile({
         filePath: testFile,

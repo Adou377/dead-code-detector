@@ -84,7 +84,9 @@ function validateConcurrency(concurrency, errors) {
   }
 
   if (concurrency < CONFIG_LIMITS.MIN_CONCURRENCY || concurrency > CONFIG_LIMITS.MAX_CONCURRENCY) {
-    errors.push(`concurrency: 必须在 ${CONFIG_LIMITS.MIN_CONCURRENCY} 到 ${CONFIG_LIMITS.MAX_CONCURRENCY} 之间`);
+    errors.push(
+      `concurrency: 必须在 ${CONFIG_LIMITS.MIN_CONCURRENCY} 到 ${CONFIG_LIMITS.MAX_CONCURRENCY} 之间`
+    );
   }
 }
 

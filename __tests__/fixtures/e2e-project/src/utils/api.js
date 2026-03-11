@@ -1,5 +1,5 @@
 // 这个文件的所有导出都是未使用的
-export const fetchData = async (url) => {
+export const fetchData = async url => {
   const response = await fetch(url);
   return response.json();
 };

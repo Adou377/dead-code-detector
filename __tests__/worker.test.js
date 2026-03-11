@@ -562,7 +562,9 @@ describe('WorkerPool 任务队列管理测试', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
 
     const statusDuringExecution = pool.getStatus();
-    expect(statusDuringExecution.queueLength + statusDuringExecution.activeTasks).toBeGreaterThan(0);
+    expect(statusDuringExecution.queueLength + statusDuringExecution.activeTasks).toBeGreaterThan(
+      0
+    );
 
     const results = await Promise.all(promises);
 
@@ -618,14 +620,16 @@ describe('WorkerPool 任务队列管理测试', () => {
     const taskPromises = [];
     for (let i = 0; i < 5; i++) {
       taskPromises.push(
-        localPool.execute({
-          type: 'parseFile',
-          options: {
-            filePath: testFile,
-            srcDir: testDir,
-            maxFileSize: 1000000,
-          },
-        }).catch(() => {})
+        localPool
+          .execute({
+            type: 'parseFile',
+            options: {
+              filePath: testFile,
+              srcDir: testDir,
+              maxFileSize: 1000000,
+            },
+          })
+          .catch(() => {})
       );
     }
 

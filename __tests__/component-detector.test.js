@@ -74,9 +74,7 @@ describe('ComponentDetector', () => {
 
   describe('collectComponentUsages', () => {
     test('应该收集组件使用情况', () => {
-      const imports = new Map([
-        ['file.js', [{ name: 'TestComponent', isInternal: true }]],
-      ]);
+      const imports = new Map([['file.js', [{ name: 'TestComponent', isInternal: true }]]]);
       const testImports = new Map();
 
       const result = detector.collectComponentUsages(imports, testImports);
@@ -88,9 +86,7 @@ describe('ComponentDetector', () => {
 
     test('应该合并测试导入', () => {
       const imports = new Map();
-      const testImports = new Map([
-        ['TestComponent', new Set(['test.js'])],
-      ]);
+      const testImports = new Map([['TestComponent', new Set(['test.js'])]]);
 
       const result = detector.collectComponentUsages(imports, testImports);
 
@@ -99,9 +95,7 @@ describe('ComponentDetector', () => {
     });
 
     test('应该跳过外部导入', () => {
-      const imports = new Map([
-        ['file.js', [{ name: 'ExternalComponent', isInternal: false }]],
-      ]);
+      const imports = new Map([['file.js', [{ name: 'ExternalComponent', isInternal: false }]]]);
       const testImports = new Map();
 
       const result = detector.collectComponentUsages(imports, testImports);
@@ -148,9 +142,7 @@ describe('ComponentDetector', () => {
     });
 
     test('应该识别 PascalCase 组件标签', () => {
-      const fileContents = new Map([
-        ['test.vue', '<template><TestComponent /></template>'],
-      ]);
+      const fileContents = new Map([['test.vue', '<template><TestComponent /></template>']]);
 
       const result = detector.buildComponentTagIndexFromFileContents(fileContents);
 
@@ -158,9 +150,7 @@ describe('ComponentDetector', () => {
     });
 
     test('应该识别 kebab-case 组件标签', () => {
-      const fileContents = new Map([
-        ['test.vue', '<template><test-component /></template>'],
-      ]);
+      const fileContents = new Map([['test.vue', '<template><test-component /></template>']]);
 
       const result = detector.buildComponentTagIndexFromFileContents(fileContents);
 
@@ -225,9 +215,7 @@ describe('ComponentDetector', () => {
 
   describe('mergeComponentTagIndex', () => {
     test('应该合并两个索引', () => {
-      const target = new Map([
-        ['ComponentA', new Set(['file1.js'])],
-      ]);
+      const target = new Map([['ComponentA', new Set(['file1.js'])]]);
       const source = new Map([
         ['ComponentA', new Set(['file2.js'])],
         ['ComponentB', new Set(['file3.js'])],
@@ -240,9 +228,7 @@ describe('ComponentDetector', () => {
     });
 
     test('应该处理空源索引', () => {
-      const target = new Map([
-        ['ComponentA', new Set(['file1.js'])],
-      ]);
+      const target = new Map([['ComponentA', new Set(['file1.js'])]]);
       const source = new Map();
 
       detector.mergeComponentTagIndex(target, source);
@@ -252,9 +238,7 @@ describe('ComponentDetector', () => {
 
     test('应该处理空目标索引', () => {
       const target = new Map();
-      const source = new Map([
-        ['ComponentA', new Set(['file1.js'])],
-      ]);
+      const source = new Map([['ComponentA', new Set(['file1.js'])]]);
 
       detector.mergeComponentTagIndex(target, source);
 
@@ -279,9 +263,7 @@ describe('ComponentDetector', () => {
 
     test('当组件在标签中使用时应该返回 true', () => {
       const componentUsages = new Map();
-      const componentTagIndex = new Map([
-        ['TestComponent', new Set(['other.vue'])],
-      ]);
+      const componentTagIndex = new Map([['TestComponent', new Set(['other.vue'])]]);
 
       const result = detector.isComponentUsed(
         'TestComponent',
@@ -309,9 +291,7 @@ describe('ComponentDetector', () => {
 
     test('当组件只在定义文件中使用时应该返回 false', () => {
       const componentUsages = new Map();
-      const componentTagIndex = new Map([
-        ['TestComponent', new Set(['TestComponent.vue'])],
-      ]);
+      const componentTagIndex = new Map([['TestComponent', new Set(['TestComponent.vue'])]]);
 
       const result = detector.isComponentUsed(
         'TestComponent',
@@ -359,9 +339,7 @@ describe('ComponentDetector', () => {
     });
 
     test('应该跳过全局组件', () => {
-      const components = new Map([
-        ['TheHeader.vue', { name: 'TheHeader', isGlobal: true }],
-      ]);
+      const components = new Map([['TheHeader.vue', { name: 'TheHeader', isGlobal: true }]]);
       const componentUsages = new Map();
       const componentTagIndex = new Map();
 
@@ -378,9 +356,7 @@ describe('ComponentDetector', () => {
       const components = new Map();
       const componentUsages = new Map();
       const componentTagIndex = new Map();
-      const localComponents = new Map([
-        ['parent.vue', ['LocalComponent']],
-      ]);
+      const localComponents = new Map([['parent.vue', ['LocalComponent']]]);
 
       const result = detector.detectUnusedComponents(
         components,
@@ -448,9 +424,7 @@ describe('ComponentDetector', () => {
 
   describe('detectUnusedLocalComponents', () => {
     test('应该检测未使用的局部组件', () => {
-      const localComponents = new Map([
-        ['parent.vue', ['LocalComponent']],
-      ]);
+      const localComponents = new Map([['parent.vue', ['LocalComponent']]]);
       const componentUsages = new Map();
       const componentTagIndex = new Map();
       const unusedComponents = [];
@@ -468,9 +442,7 @@ describe('ComponentDetector', () => {
     });
 
     test('不应该重复添加已存在的组件', () => {
-      const localComponents = new Map([
-        ['parent.vue', ['ExistingComponent']],
-      ]);
+      const localComponents = new Map([['parent.vue', ['ExistingComponent']]]);
       const componentUsages = new Map();
       const componentTagIndex = new Map();
       const unusedComponents = [{ file: 'parent.vue', name: 'ExistingComponent' }];
@@ -482,9 +454,7 @@ describe('ComponentDetector', () => {
         unusedComponents
       );
 
-      const existingCount = unusedComponents.filter(
-        c => c.name === 'ExistingComponent'
-      ).length;
+      const existingCount = unusedComponents.filter(c => c.name === 'ExistingComponent').length;
       expect(existingCount).toBe(1);
     });
 

@@ -109,13 +109,13 @@ npm run format
 
 ### 命名规范
 
-| 类型 | 规范 | 示例 |
-|------|------|------|
-| 变量和函数 | camelCase | `extractImports`, `findUnusedExports` |
-| 类名和组件名 | PascalCase | `DeadCodeFinder`, `IncrementalAnalyzer` |
-| 常量 | UPPER_SNAKE_CASE | `DEFAULT_EXTENSIONS`, `MAX_CACHE_SIZE` |
-| 文件名 | kebab-case | `detector-ast.js`, `incremental-analyzer.js` |
-| 私有方法 | _前缀 | `_parseContent`, `_resolvePath` |
+| 类型         | 规范             | 示例                                         |
+| ------------ | ---------------- | -------------------------------------------- |
+| 变量和函数   | camelCase        | `extractImports`, `findUnusedExports`        |
+| 类名和组件名 | PascalCase       | `DeadCodeFinder`, `IncrementalAnalyzer`      |
+| 常量         | UPPER_SNAKE_CASE | `DEFAULT_EXTENSIONS`, `MAX_CACHE_SIZE`       |
+| 文件名       | kebab-case       | `detector-ast.js`, `incremental-analyzer.js` |
+| 私有方法     | \_前缀           | `_parseContent`, `_resolvePath`              |
 
 ### 注释规范
 
@@ -133,6 +133,7 @@ function extractImports(content, options) {
 ```
 
 注释原则：
+
 - 为公共 API 添加 JSDoc 注释
 - 注释应该解释"为什么"，而不是"做什么"
 - 更新代码时同步更新注释
@@ -164,8 +165,12 @@ function detectDeadCode() {
 }
 
 // ❌ 重复代码
-function processVue() { /* 重复逻辑 */ }
-function processReact() { /* 重复逻辑 */ }
+function processVue() {
+  /* 重复逻辑 */
+}
+function processReact() {
+  /* 重复逻辑 */
+}
 
 // ✅ 提取公共逻辑
 function processFile(content, fileType) {
@@ -190,20 +195,21 @@ function processFile(content, fileType) {
 
 ### Type 类型
 
-| 类型 | 说明 | 示例 |
-|------|------|------|
-| feat | 新功能 | feat: 添加增量分析功能 |
-| fix | Bug 修复 | fix: 修复 Vue 3 解析错误 |
-| docs | 文档更新 | docs: 更新 API 文档 |
-| style | 代码格式（不影响功能） | style: 格式化代码 |
-| refactor | 重构 | refactor: 优化检测算法 |
-| perf | 性能优化 | perf: 优化大文件解析速度 |
-| test | 测试相关 | test: 添加 E2E 测试 |
-| chore | 构建/工具变动 | chore: 更新依赖版本 |
+| 类型     | 说明                   | 示例                     |
+| -------- | ---------------------- | ------------------------ |
+| feat     | 新功能                 | feat: 添加增量分析功能   |
+| fix      | Bug 修复               | fix: 修复 Vue 3 解析错误 |
+| docs     | 文档更新               | docs: 更新 API 文档      |
+| style    | 代码格式（不影响功能） | style: 格式化代码        |
+| refactor | 重构                   | refactor: 优化检测算法   |
+| perf     | 性能优化               | perf: 优化大文件解析速度 |
+| test     | 测试相关               | test: 添加 E2E 测试      |
+| chore    | 构建/工具变动          | chore: 更新依赖版本      |
 
 ### Scope 范围
 
 常用 scope：
+
 - `detector`: 检测器相关
 - `parser`: 解析器相关
 - `cli`: 命令行相关
@@ -247,6 +253,7 @@ git checkout -b fix/bug-description
 ```
 
 分支命名规范：
+
 - `feature/`: 新功能
 - `fix/`: Bug 修复
 - `docs/`: 文档更新
@@ -378,12 +385,12 @@ describe('ModuleName', () => {
 
 ### 覆盖率要求
 
-| 指标 | 最低要求 |
-|------|----------|
-| 语句覆盖 | 80% |
-| 分支覆盖 | 70% |
-| 函数覆盖 | 80% |
-| 行覆盖 | 80% |
+| 指标     | 最低要求 |
+| -------- | -------- |
+| 语句覆盖 | 80%      |
+| 分支覆盖 | 70%      |
+| 函数覆盖 | 80%      |
+| 行覆盖   | 80%      |
 
 详细测试指南请参阅 [TESTING.md](./TESTING.md)。
 
@@ -422,17 +429,19 @@ describe('ModuleName', () => {
 - 项目类型: Vue 3 / React / TypeScript
 
 ## 错误日志
+```
 
-```
 粘贴错误日志
-```
+
+````
 
 ## 配置文件
 
 ```json
 粘贴相关配置
-```
-```
+````
+
+````
 
 ### 功能请求模板
 
@@ -452,7 +461,7 @@ describe('ModuleName', () => {
 ## 替代方案
 
 描述您考虑过的其他方案
-```
+````
 
 ---
 

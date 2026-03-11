@@ -73,7 +73,7 @@ function parseJs(content, filePath) {
 function parseVue(content, filePath) {
   VUE_SCRIPT_REGEX.script.lastIndex = 0;
   VUE_SCRIPT_REGEX.scriptSetup.lastIndex = 0;
-  
+
   const scriptMatch = content.match(VUE_SCRIPT_REGEX.script);
   const scriptSetupMatch = content.match(VUE_SCRIPT_REGEX.scriptSetup);
 

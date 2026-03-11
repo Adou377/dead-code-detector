@@ -13,13 +13,13 @@ function suppressConsole() {
   const originalWarn = console.warn;
   const originalClear = console.clear;
   const originalStdoutWrite = process.stdout.write;
-  
+
   // 使用空函数替代，但保留返回值
   console.log = jest.fn(() => {});
   console.warn = jest.fn(() => {});
   console.clear = jest.fn(() => {});
   process.stdout.write = jest.fn(() => true);
-  
+
   return () => {
     console.log = originalLog;
     console.warn = originalWarn;
@@ -52,11 +52,11 @@ describe('E2E 集成测试', () => {
 
       // 验证检测到未使用的导出
       const unusedExportNames = finder.unusedExports.map(e => e.name);
-      
+
       // helpers.js 中未使用的导出
       expect(unusedExportNames).toContain('formatPhone');
       expect(unusedExportNames).toContain('formatAddress');
-      
+
       // api.js 中所有导出都是未使用的
       expect(unusedExportNames).toContain('fetchData');
       expect(unusedExportNames).toContain('postData');
@@ -75,10 +75,10 @@ describe('E2E 集成测试', () => {
 
       // 验证检测到未使用的组件
       const unusedComponentNames = finder.unusedComponents.map(c => c.name);
-      
+
       // ProductCard.vue 是未使用的
       expect(unusedComponentNames).toContain('ProductCard');
-      
+
       // ReactUnused.jsx 是未使用的
       expect(unusedComponentNames).toContain('ReactUnused');
     });
@@ -94,7 +94,7 @@ describe('E2E 集成测试', () => {
       await finder.analyze();
 
       const unusedExportNames = finder.unusedExports.map(e => e.name);
-      
+
       // formatDate 和 formatCurrency 是已使用的
       expect(unusedExportNames).not.toContain('formatDate');
       expect(unusedExportNames).not.toContain('formatCurrency');
@@ -111,11 +111,11 @@ describe('E2E 集成测试', () => {
       await finder.analyze();
 
       const unusedComponentNames = finder.unusedComponents.map(c => c.name);
-      
+
       // UsedButton 和 ReactUsed 是已使用的
       expect(unusedComponentNames).not.toContain('UsedButton');
       expect(unusedComponentNames).not.toContain('ReactUsed');
-      
+
       // Home 和 App 是全局组件或入口组件
       expect(unusedComponentNames).not.toContain('Home');
       expect(unusedComponentNames).not.toContain('App');
@@ -151,7 +151,7 @@ describe('E2E 集成测试', () => {
 
       // api.js 是一个未被任何文件导入的工具文件
       const unusedFiles = finder.unusedToolFiles;
-      
+
       // 验证 api.js 被检测为未使用的工具文件
       expect(unusedFiles.some(f => f.includes('api.js'))).toBe(true);
     });
@@ -296,11 +296,11 @@ describe('E2E 集成测试', () => {
       // 验证文件已被修改
       const helpersPath = path.join(tempSrcDir, 'utils', 'helpers.js');
       const content = fs.readFileSync(helpersPath, 'utf-8');
-      
+
       // 未使用的导出应该被移除
       expect(content).not.toContain('formatPhone');
       expect(content).not.toContain('formatAddress');
-      
+
       // 已使用的导出应该保留
       expect(content).toContain('formatDate');
       expect(content).toContain('formatCurrency');
@@ -328,14 +328,14 @@ describe('E2E 集成测试', () => {
       // 验证未使用的组件文件已被删除
       const productCardPath = path.join(tempSrcDir, 'components', 'ProductCard.vue');
       const reactUnusedPath = path.join(tempSrcDir, 'components', 'ReactUnused.jsx');
-      
+
       expect(fs.existsSync(productCardPath)).toBe(false);
       expect(fs.existsSync(reactUnusedPath)).toBe(false);
 
       // 验证已使用的组件文件仍然存在
       const usedButtonPath = path.join(tempSrcDir, 'components', 'UsedButton.vue');
       const reactUsedPath = path.join(tempSrcDir, 'components', 'ReactUsed.jsx');
-      
+
       expect(fs.existsSync(usedButtonPath)).toBe(true);
       expect(fs.existsSync(reactUsedPath)).toBe(true);
     });

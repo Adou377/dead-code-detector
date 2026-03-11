@@ -32,7 +32,7 @@ describe('incremental-analyzer', () => {
   describe('getChangedFiles', () => {
     test('应在 Git 仓库中返回变更的源代码文件', () => {
       const callCount = { count: 0 };
-      execSyncMock.mockImplementation((cmd) => {
+      execSyncMock.mockImplementation(cmd => {
         callCount.count++;
         if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
         if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
@@ -48,7 +48,7 @@ describe('incremental-analyzer', () => {
 
     test('应使用自定义基准分支', () => {
       const callCount = { count: 0 };
-      execSyncMock.mockImplementation((cmd) => {
+      execSyncMock.mockImplementation(cmd => {
         callCount.count++;
         if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
         if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
@@ -65,7 +65,7 @@ describe('incremental-analyzer', () => {
 
     test('应自动检测 main 分支', () => {
       const callCount = { count: 0 };
-      execSyncMock.mockImplementation((cmd) => {
+      execSyncMock.mockImplementation(cmd => {
         callCount.count++;
         if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
         if (cmd.includes('symbolic-ref refs/remotes/origin/HEAD')) {
@@ -81,7 +81,7 @@ describe('incremental-analyzer', () => {
     });
 
     test('应自动检测 master 分支（当 main 不存在时）', () => {
-      execSyncMock.mockImplementation((cmd) => {
+      execSyncMock.mockImplementation(cmd => {
         if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
         if (cmd.includes('symbolic-ref refs/remotes/origin/HEAD')) {
           throw new Error('not found');
@@ -116,7 +116,7 @@ describe('incremental-analyzer', () => {
     });
 
     test('分支不存在应返回 fallback 结果', () => {
-      execSyncMock.mockImplementation((cmd) => {
+      execSyncMock.mockImplementation(cmd => {
         if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
         if (cmd.includes('rev-parse --verify')) {
           throw new Error('not found');
@@ -132,7 +132,7 @@ describe('incremental-analyzer', () => {
     });
 
     test('无法自动检测分支时应返回 fallback 结果', () => {
-      execSyncMock.mockImplementation((cmd) => {
+      execSyncMock.mockImplementation(cmd => {
         if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
         if (cmd.includes('symbolic-ref')) throw new Error('not found');
         if (cmd.includes('rev-parse --verify')) throw new Error('not found');
@@ -147,7 +147,7 @@ describe('incremental-analyzer', () => {
     });
 
     test('应过滤非源代码文件', () => {
-      execSyncMock.mockImplementation((cmd) => {
+      execSyncMock.mockImplementation(cmd => {
         if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
         if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return 'src/index.js\nsrc/style.css\nsrc/data.json\nsrc/image.png\n';
@@ -159,7 +159,7 @@ describe('incremental-analyzer', () => {
     });
 
     test('应处理空变更列表', () => {
-      execSyncMock.mockImplementation((cmd) => {
+      execSyncMock.mockImplementation(cmd => {
         if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
         if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return '';
@@ -171,7 +171,7 @@ describe('incremental-analyzer', () => {
     });
 
     test('应处理 Windows 路径分隔符', () => {
-      execSyncMock.mockImplementation((cmd) => {
+      execSyncMock.mockImplementation(cmd => {
         if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
         if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return 'src\\utils.js\nsrc\\components\\Button.jsx\n';
@@ -183,7 +183,7 @@ describe('incremental-analyzer', () => {
     });
 
     test('应支持 TypeScript 文件', () => {
-      execSyncMock.mockImplementation((cmd) => {
+      execSyncMock.mockImplementation(cmd => {
         if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
         if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return 'src/types.ts\nsrc/component.tsx\n';
@@ -195,7 +195,7 @@ describe('incremental-analyzer', () => {
     });
 
     test('应支持 Vue 文件', () => {
-      execSyncMock.mockImplementation((cmd) => {
+      execSyncMock.mockImplementation(cmd => {
         if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
         if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return 'src/App.vue\n';
@@ -289,10 +289,7 @@ describe('incremental-analyzer', () => {
             { source: 'react', isInternal: false },
           ],
         ],
-        [
-          'src/other.js',
-          [{ source: './utils', isInternal: true }],
-        ],
+        ['src/other.js', [{ source: './utils', isInternal: true }]],
       ]);
 
       const result = analyzeAffectedFiles(changedFiles, imports);
@@ -304,12 +301,7 @@ describe('incremental-analyzer', () => {
 
     test('应忽略外部依赖', () => {
       const changedFiles = ['src/utils.js'];
-      const imports = new Map([
-        [
-          'src/component.js',
-          [{ source: 'react', isInternal: false }],
-        ],
-      ]);
+      const imports = new Map([['src/component.js', [{ source: 'react', isInternal: false }]]]);
 
       const result = analyzeAffectedFiles(changedFiles, imports);
 
@@ -328,9 +320,7 @@ describe('incremental-analyzer', () => {
 
     test('应处理空的变更文件列表', () => {
       const changedFiles = [];
-      const imports = new Map([
-        ['src/a.js', [{ source: './b', isInternal: true }]],
-      ]);
+      const imports = new Map([['src/a.js', [{ source: './b', isInternal: true }]]]);
 
       const result = analyzeAffectedFiles(changedFiles, imports);
 
@@ -340,14 +330,8 @@ describe('incremental-analyzer', () => {
     test('应处理多级依赖链', () => {
       const changedFiles = ['src/base.js'];
       const imports = new Map([
-        [
-          'src/layer1.js',
-          [{ source: './base', isInternal: true }],
-        ],
-        [
-          'src/layer2.js',
-          [{ source: './layer1', isInternal: true }],
-        ],
+        ['src/layer1.js', [{ source: './base', isInternal: true }]],
+        ['src/layer2.js', [{ source: './layer1', isInternal: true }]],
       ]);
 
       const result = analyzeAffectedFiles(changedFiles, imports);
@@ -359,12 +343,7 @@ describe('incremental-analyzer', () => {
 
     test('应规范化 Windows 路径', () => {
       const changedFiles = ['src\\utils.js'];
-      const imports = new Map([
-        [
-          'src/component.js',
-          [{ source: './utils', isInternal: true }],
-        ],
-      ]);
+      const imports = new Map([['src/component.js', [{ source: './utils', isInternal: true }]]]);
 
       const result = analyzeAffectedFiles(changedFiles, imports);
 
@@ -373,12 +352,7 @@ describe('incremental-analyzer', () => {
 
     test('应处理没有 source 的导入', () => {
       const changedFiles = ['src/utils.js'];
-      const imports = new Map([
-        [
-          'src/component.js',
-          [{ isInternal: true }],
-        ],
-      ]);
+      const imports = new Map([['src/component.js', [{ isInternal: true }]]]);
 
       const result = analyzeAffectedFiles(changedFiles, imports);
 
@@ -615,7 +589,7 @@ describe('incremental-analyzer', () => {
 
   describe('边界条件测试', () => {
     test('getChangedFiles 应处理多行输出中的空行', () => {
-      execSyncMock.mockImplementation((cmd) => {
+      execSyncMock.mockImplementation(cmd => {
         if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
         if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return '\nsrc/a.js\n\nsrc/b.js\n\n';
@@ -662,9 +636,16 @@ describe('incremental-analyzer', () => {
 });
 
 describe('IncrementalAnalyzer 类测试', () => {
-  const { IncrementalAnalyzer, createIncrementalCache, analyzeFileWithCache, analyzeFilesWithCache, getCacheStats, clearCache } = require('../src/incremental-analyzer');
+  const {
+    IncrementalAnalyzer,
+    createIncrementalCache,
+    analyzeFileWithCache,
+    analyzeFilesWithCache,
+    getCacheStats,
+    clearCache,
+  } = require('../src/incremental-analyzer');
   const execSyncMock = childProcess.execSync;
-  
+
   beforeEach(() => {
     jest.spyOn(console, 'log').mockImplementation(() => {});
     jest.spyOn(console, 'warn').mockImplementation(() => {});
@@ -673,62 +654,62 @@ describe('IncrementalAnalyzer 类测试', () => {
   afterEach(() => {
     jest.restoreAllMocks();
   });
-  
+
   describe('IncrementalAnalyzer 构造函数', () => {
     test('应使用默认选项创建实例', () => {
       const analyzer = new IncrementalAnalyzer();
-      
+
       expect(analyzer.srcDir).toBe(process.cwd());
       expect(analyzer.baseBranch).toBe('main');
       expect(analyzer.verbose).toBe(false);
     });
-    
+
     test('应使用自定义选项创建实例', () => {
       const analyzer = new IncrementalAnalyzer({
         srcDir: '/project/src',
         baseBranch: 'develop',
         verbose: true,
       });
-      
+
       expect(analyzer.srcDir).toBe('/project/src');
       expect(analyzer.baseBranch).toBe('develop');
       expect(analyzer.verbose).toBe(true);
     });
-    
+
     test('应初始化缓存管理器', () => {
       const analyzer = new IncrementalAnalyzer({
         srcDir: '/project/src',
       });
-      
+
       expect(analyzer.cacheManager).toBeDefined();
     });
   });
-  
+
   describe('initialize 方法', () => {
     test('应加载缓存', () => {
       const analyzer = new IncrementalAnalyzer({ srcDir: '/project/src' });
-      
+
       const result = analyzer.initialize();
-      
+
       expect(result).toBe(analyzer);
     });
   });
-  
+
   describe('getChangedFiles 方法', () => {
     test('应调用全局函数', () => {
-      execSyncMock.mockImplementation((cmd) => {
+      execSyncMock.mockImplementation(cmd => {
         if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
         if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return 'src/a.js\n';
       });
-      
+
       const analyzer = new IncrementalAnalyzer({ srcDir: '/project/src' });
       const result = analyzer.getChangedFiles();
-      
+
       expect(result.files).toEqual(['src/a.js']);
     });
   });
-  
+
   describe('getUncommittedChanges 方法', () => {
     test('应调用全局函数', () => {
       const callCount = { count: 0 };
@@ -738,162 +719,168 @@ describe('IncrementalAnalyzer 类测试', () => {
         if (callCount.count === 2) return 'src/a.js\n';
         return 'src/b.js\n';
       });
-      
+
       const analyzer = new IncrementalAnalyzer({ srcDir: '/project/src' });
       const result = analyzer.getUncommittedChanges();
-      
+
       expect(result).toContain('src/a.js');
       expect(result).toContain('src/b.js');
     });
   });
-  
+
   describe('isIncrementalSupported 方法', () => {
     test('Git 仓库应返回 true', () => {
       execSyncMock.mockImplementation(() => Buffer.from('true'));
-      
+
       const analyzer = new IncrementalAnalyzer({ srcDir: '/project/src' });
       const result = analyzer.isIncrementalSupported();
-      
+
       expect(result).toBe(true);
     });
-    
+
     test('非 Git 仓库应返回 false', () => {
       execSyncMock.mockImplementation(() => {
         throw new Error('not a git repository');
       });
-      
+
       const analyzer = new IncrementalAnalyzer({ srcDir: '/project/src' });
       const result = analyzer.isIncrementalSupported();
-      
+
       expect(result).toBe(false);
     });
   });
-  
+
   describe('getCurrentBranch 方法', () => {
     test('应返回当前分支', () => {
       execSyncMock.mockImplementation(() => 'feature/test\n');
-      
+
       const analyzer = new IncrementalAnalyzer({ srcDir: '/project/src' });
       const result = analyzer.getCurrentBranch();
-      
+
       expect(result).toBe('feature/test');
     });
   });
-  
+
   describe('getLastCommitHash 方法', () => {
     test('应返回提交哈希', () => {
       execSyncMock.mockImplementation(() => 'abc1234\n');
-      
+
       const analyzer = new IncrementalAnalyzer({ srcDir: '/project/src' });
       const result = analyzer.getLastCommitHash();
-      
+
       expect(result).toBe('abc1234');
     });
   });
-  
+
   describe('缓存相关方法', () => {
     test('analyzeWithCache 应缓存分析结果', () => {
       const analyzer = new IncrementalAnalyzer({ srcDir: '/project/src' }).initialize();
-      
+
       const mockAnalyzer = jest.fn().mockReturnValue({ exports: ['foo'] });
-      
+
       const result1 = analyzer.analyzeWithCache(['test.js'], mockAnalyzer);
       expect(result1.cacheMisses).toBeGreaterThanOrEqual(0);
       expect(result1.cacheMisses).toBeLessThanOrEqual(2);
-      
+
       const result2 = analyzer.analyzeWithCache(['test.js'], mockAnalyzer);
       expect(result2.cacheHits).toBeGreaterThanOrEqual(0);
       expect(result2.cacheHits).toBeLessThanOrEqual(2);
-      
+
       expect(mockAnalyzer.mock.calls.length).toBeGreaterThanOrEqual(1);
       expect(mockAnalyzer.mock.calls.length).toBeLessThanOrEqual(2);
     });
-    
+
     test('getCacheStats 应返回缓存统计', () => {
       const analyzer = new IncrementalAnalyzer({ srcDir: '/project/src' }).initialize();
-      
+
       const stats = analyzer.getCacheStats();
-      
+
       expect(stats).toBeDefined();
     });
-    
+
     test('clearCache 应清空缓存', () => {
       const analyzer = new IncrementalAnalyzer({ srcDir: '/project/src' }).initialize();
-      
+
       analyzer.analyzeWithCache(['test.js'], () => ({ exports: ['foo'] }));
-      
+
       const result = analyzer.clearCache();
-      
+
       expect(result).toBe(true);
     });
-    
+
     test('saveCache 应保存缓存', () => {
       const analyzer = new IncrementalAnalyzer({ srcDir: '/project/src' }).initialize();
-      
+
       const result = analyzer.saveCache();
-      
+
       expect(typeof result).toBe('boolean');
     });
   });
 });
 
 describe('缓存辅助函数测试', () => {
-  const { createIncrementalCache, analyzeFileWithCache, analyzeFilesWithCache, getCacheStats, clearCache } = require('../src/incremental-analyzer');
-  
+  const {
+    createIncrementalCache,
+    analyzeFileWithCache,
+    analyzeFilesWithCache,
+    getCacheStats,
+    clearCache,
+  } = require('../src/incremental-analyzer');
+
   describe('createIncrementalCache', () => {
     test('应创建缓存管理器', () => {
       const cache = createIncrementalCache({
         projectRoot: '/project',
       });
-      
+
       expect(cache).toBeDefined();
       expect(cache.get).toBeDefined();
       expect(cache.set).toBeDefined();
     });
   });
-  
+
   describe('analyzeFileWithCache', () => {
     test('应缓存分析结果', () => {
       const cache = createIncrementalCache({ projectRoot: '/project' });
       cache.load();
-      
+
       const analyzer = jest.fn().mockReturnValue({ exports: ['test'] });
-      
+
       const result1 = analyzeFileWithCache('test.js', analyzer, cache);
       expect(result1.fromCache).toBe(false);
       expect(result1.data).toEqual({ exports: ['test'] });
-      
+
       const result2 = analyzeFileWithCache('test.js', analyzer, cache);
       expect(typeof result2.fromCache).toBe('boolean');
-      
+
       expect(analyzer.mock.calls.length).toBeGreaterThanOrEqual(1);
       expect(analyzer.mock.calls.length).toBeLessThanOrEqual(2);
     });
-    
+
     test('应处理分析错误', () => {
       const cache = createIncrementalCache({ projectRoot: '/project' });
       cache.load();
-      
+
       const analyzer = jest.fn().mockImplementation(() => {
         throw new Error('Analysis failed');
       });
-      
+
       expect(() => analyzeFileWithCache('error.js', analyzer, cache)).toThrow('Analysis failed');
     });
   });
-  
+
   describe('analyzeFilesWithCache', () => {
     test('应批量分析文件', () => {
       const cache = createIncrementalCache({ projectRoot: '/project' });
       cache.load();
-      
-      const analyzer = jest.fn().mockImplementation((file) => ({
+
+      const analyzer = jest.fn().mockImplementation(file => ({
         file,
         exports: ['export1'],
       }));
-      
+
       const result = analyzeFilesWithCache(['a.js', 'b.js', 'c.js'], analyzer, cache);
-      
+
       expect(result.data.size).toBeGreaterThanOrEqual(3);
       expect(result.data.size).toBeLessThanOrEqual(4);
       expect(result.cacheMisses).toBeGreaterThanOrEqual(0);
@@ -902,64 +889,65 @@ describe('缓存辅助函数测试', () => {
       expect(result.cacheHits).toBeLessThanOrEqual(3);
       expect(result.errors).toHaveLength(0);
     });
-    
+
     test('应记录分析错误', () => {
       const cache = createIncrementalCache({ projectRoot: '/project' });
       cache.load();
-      
-      const analyzer = jest.fn()
+
+      const analyzer = jest
+        .fn()
         .mockReturnValueOnce({ exports: ['a'] })
         .mockImplementationOnce(() => {
           throw new Error('Failed');
         })
         .mockReturnValueOnce({ exports: ['c'] });
-      
+
       const result = analyzeFilesWithCache(['a.js', 'b.js', 'c.js'], analyzer, cache);
-      
+
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].filePath).toBe('b.js');
     });
-    
+
     test('应正确统计缓存命中', () => {
       const cache = createIncrementalCache({ projectRoot: '/project' });
       cache.load();
-      
+
       const analyzer = jest.fn().mockReturnValue({ exports: ['test'] });
-      
+
       analyzeFilesWithCache(['a.js', 'b.js'], analyzer, cache);
       const result = analyzeFilesWithCache(['a.js', 'b.js', 'c.js'], analyzer, cache);
-      
+
       expect(result.cacheHits).toBeGreaterThanOrEqual(1);
       expect(result.cacheHits).toBeLessThanOrEqual(3);
       expect(result.cacheMisses).toBeGreaterThanOrEqual(0);
       expect(result.cacheMisses).toBeLessThanOrEqual(2);
     });
   });
-  
+
   describe('getCacheStats', () => {
     test('应返回缓存统计', () => {
       const cache = createIncrementalCache({ projectRoot: '/project' });
       cache.load();
-      
+
       cache.set('test.js', { exports: ['foo'] });
-      
+
       const stats = getCacheStats(cache);
-      
+
       expect(stats.totalFiles).toBeGreaterThanOrEqual(1);
       expect(stats.totalFiles).toBeLessThanOrEqual(2);
     });
   });
-  
+
   describe('clearCache', () => {
     test('应清空缓存', () => {
       const cache = createIncrementalCache({ projectRoot: '/project' });
       cache.load();
-      
+
       cache.set('test.js', { exports: ['foo'] });
       expect(cache.get('test.js')).not.toBeNull();
-      
+
       const result = clearCache(cache);
-      
+
       expect(result).toBe(true);
       expect(cache.get('test.js')).toBeNull();
     });

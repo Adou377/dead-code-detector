@@ -90,21 +90,21 @@ dead-code --fix --confirm
 <details>
 <summary>完整配置选项</summary>
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `srcDir` | 要扫描的源目录 | `./src` |
-| `extensions` | 要包含的文件扩展名 | `[".js", ".vue", ".jsx", ".ts", ".tsx"]` |
-| `ignoreDirs` | 要忽略的目录 | `["node_modules", "dist", ".git"]` |
-| `mode` | 检测模式: "ast" 或 "regex" | `"ast"` |
-| `fix` | 启用自动修复模式 | `false` |
-| `verbose` | 启用详细输出 | `false` |
-| `maxFileSize` | 最大文件大小（字节） | `1000000` (1MB) |
-| `concurrency` | 最大并发数 | `50` |
-| `cache` | 启用持久化缓存 | `true` |
-| `cacheDir` | 缓存目录 | `.dead-code-cache` |
-| `cacheMaxAge` | 缓存最大有效期（毫秒） | `604800000` (7天) |
-| `maxEntries` | 最大缓存条目数 | `100` |
-| `maxMemoryMB` | 缓存最大内存使用量 | `50` |
+| 选项          | 说明                       | 默认值                                   |
+| ------------- | -------------------------- | ---------------------------------------- |
+| `srcDir`      | 要扫描的源目录             | `./src`                                  |
+| `extensions`  | 要包含的文件扩展名         | `[".js", ".vue", ".jsx", ".ts", ".tsx"]` |
+| `ignoreDirs`  | 要忽略的目录               | `["node_modules", "dist", ".git"]`       |
+| `mode`        | 检测模式: "ast" 或 "regex" | `"ast"`                                  |
+| `fix`         | 启用自动修复模式           | `false`                                  |
+| `verbose`     | 启用详细输出               | `false`                                  |
+| `maxFileSize` | 最大文件大小（字节）       | `1000000` (1MB)                          |
+| `concurrency` | 最大并发数                 | `50`                                     |
+| `cache`       | 启用持久化缓存             | `true`                                   |
+| `cacheDir`    | 缓存目录                   | `.dead-code-cache`                       |
+| `cacheMaxAge` | 缓存最大有效期（毫秒）     | `604800000` (7天)                        |
+| `maxEntries`  | 最大缓存条目数             | `100`                                    |
+| `maxMemoryMB` | 缓存最大内存使用量         | `50`                                     |
 
 </details>
 
@@ -120,17 +120,18 @@ dead-code --incremental
 dead-code --incremental --base-branch develop
 ```
 
-| 场景 | 命令 |
-|------|------|
-| 日常开发 | `dead-code --incremental` |
-| PR 代码审查 | `dead-code --incremental --base-branch main` |
-| 完整代码审计 | `dead-code` |
+| 场景         | 命令                                         |
+| ------------ | -------------------------------------------- |
+| 日常开发     | `dead-code --incremental`                    |
+| PR 代码审查  | `dead-code --incremental --base-branch main` |
+| 完整代码审计 | `dead-code`                                  |
 
 ## 🔍 检测模式
 
 ### AST 模式（默认）
 
 **推荐用于大多数项目**
+
 - 使用 Babel AST 解析进行高精度检测
 - 支持多行导出、TypeScript 类型和 Vue `<script setup>`
 - 更好地处理复杂的导出/导入模式
@@ -138,6 +139,7 @@ dead-code --incremental --base-branch develop
 ### 正则模式
 
 **用于旧项目或性能关键场景**
+
 - 使用传统正则表达式进行更快的扫描
 - 准确性较低但适用于旧代码库
 - 对复杂语法特性的支持有限
@@ -156,6 +158,7 @@ dead-code --fix
 ```
 
 **安全措施：**
+
 1. 始终先不带 `--fix` 运行以预览
 2. 使用 `--dry-run` 查看将被删除的内容
 3. 使用 `--confirm` 进行交互式确认
@@ -248,11 +251,11 @@ dead-code --src ./src --mode ast --ext .js,.vue,.tsx --ignore node_modules,dist 
 
 ### 错误信息
 
-| 错误 | 解决方案 |
-|------|----------|
-| "无法解析文件" | 文件有语法错误，将被跳过 |
-| "路径别名未解析" | 检查项目配置或手动指定 |
-| "未找到文件" | 用 `--src` 检查源目录 |
+| 错误             | 解决方案                 |
+| ---------------- | ------------------------ |
+| "无法解析文件"   | 文件有语法错误，将被跳过 |
+| "路径别名未解析" | 检查项目配置或手动指定   |
+| "未找到文件"     | 用 `--src` 检查源目录    |
 
 ## 📖 API 文档
 
@@ -268,6 +271,7 @@ console.log('未使用的导出:', result.results.unusedExports);
 ## 🔄 迁移指南
 
 从其他工具迁移？请查看 [MIGRATION.md](./MIGRATION.md)，包括：
+
 - 从 ts-prune、unused、webpack-deadcode-plugin 迁移
 - 版本升级说明
 - 配置迁移示例

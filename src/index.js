@@ -5,7 +5,13 @@
 const { DeadCodeFinder } = require('./detector.js');
 const { DeadCodeFinderAST } = require('./detector-ast.js');
 const { parseArgs, validateOptions } = require('./utils.js');
-const { loadConfig, mergeConfig, validateConfig } = require('./config.js');
+const {
+  loadConfig,
+  mergeConfig,
+  validateConfig,
+  DEFAULT_MAX_FILE_SIZE,
+  DEFAULT_CONCURRENCY,
+} = require('./config.js');
 const { DEFAULT_MODE } = require('./constants.js');
 const {
   getChangedFiles,
@@ -155,8 +161,10 @@ async function run() {
   console.log(`   文件扩展名: ${extensions.join(', ')}`);
   console.log(`   忽略目录: ${ignoreDirs.join(', ')}`);
   console.log(`   检测模式: ${modeLabel}`);
-  console.log(`   最大文件大小: ${(maxFileSize / 1000000).toFixed(1)}MB`);
-  console.log(`   并行读取: 最多 ${concurrency} 个文件同时处理`);
+  console.log(
+    `   最大文件大小: ${((maxFileSize ?? DEFAULT_MAX_FILE_SIZE) / 1000000).toFixed(1)}MB`
+  );
+  console.log(`   并行读取: 最多 ${concurrency ?? DEFAULT_CONCURRENCY} 个文件同时处理`);
 
   // 增量分析模式
   let incrementalResult = null;
@@ -181,7 +189,9 @@ async function run() {
         const lastCommit = getLastCommitHash(srcDir);
         console.log('   增量分析: 启用');
         console.log(`   当前分支: ${currentBranch || '未知'}`);
-        console.log(`   基准分支: ${incrementalResult.branch}${incrementalResult.autoDetected ? ' (自动检测)' : ''}`);
+        console.log(
+          `   基准分支: ${incrementalResult.branch}${incrementalResult.autoDetected ? ' (自动检测)' : ''}`
+        );
         console.log(`   最近提交: ${lastCommit || '未知'}\n`);
       }
     }
@@ -219,7 +229,10 @@ async function run() {
     if (changedFiles && changedFiles.length > 0) {
       console.log(`\n📊 增量分析: 检测到 ${changedFiles.length} 个变更文件\n`);
       finder.unusedExports = filterUnusedExports(finder.unusedExports, new Set(changedFiles));
-      finder.unusedComponents = filterUnusedComponents(finder.unusedComponents, new Set(changedFiles));
+      finder.unusedComponents = filterUnusedComponents(
+        finder.unusedComponents,
+        new Set(changedFiles)
+      );
       finder.unusedToolFiles = filterUnusedToolFiles(finder.unusedToolFiles, new Set(changedFiles));
     } else if (changedFiles && changedFiles.length === 0) {
       console.log('\n📊 增量分析: 没有检测到变更文件\n');

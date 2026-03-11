@@ -82,9 +82,7 @@ describe('Reporter', () => {
     test('应该正确显示未使用的组件', () => {
       const data = {
         unusedExports: [],
-        unusedComponents: [
-          { file: 'UnusedComponent.vue', name: 'UnusedComponent' },
-        ],
+        unusedComponents: [{ file: 'UnusedComponent.vue', name: 'UnusedComponent' }],
         unusedToolFiles: [],
       };
 
@@ -174,9 +172,7 @@ describe('Reporter', () => {
       Reporter.printUnusedExports(unusedExports);
 
       const calls = consoleSpy.mock.calls;
-      const hasMoreMessage = calls.some(call =>
-        call[0] && call[0].includes('还有')
-      );
+      const hasMoreMessage = calls.some(call => call[0] && call[0].includes('还有'));
 
       expect(hasMoreMessage).toBe(true);
 
@@ -287,7 +283,10 @@ describe('Reporter', () => {
       const result = Reporter.groupByFile(items);
 
       expect(result).toEqual({
-        'a.js': [{ file: 'a.js', name: 'foo' }, { file: 'a.js', name: 'bar' }],
+        'a.js': [
+          { file: 'a.js', name: 'foo' },
+          { file: 'a.js', name: 'bar' },
+        ],
         'b.js': [{ file: 'b.js', name: 'baz' }],
       });
     });

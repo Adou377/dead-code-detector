@@ -1,6 +1,6 @@
 /**
  * 边界情况测试
- * 
+ *
  * 测试大文件处理、特殊字符路径、并发安全等边界场景
  */
 
@@ -12,7 +12,12 @@ const { DeadCodeFinderAST } = require('../src/detector-ast.js');
 const { CacheManager, LRUCache } = require('../src/cache.js');
 const { PathResolver } = require('../src/resolver.js');
 const { WorkerPool, createWorkerPool } = require('../src/worker/index.js');
-const { processParallel, validateOptions, isSafePath, hasPathTraversal } = require('../src/utils.js');
+const {
+  processParallel,
+  validateOptions,
+  isSafePath,
+  hasPathTraversal,
+} = require('../src/utils.js');
 const { DEFAULT_EXTENSIONS, DEFAULT_IGNORE_DIRS } = require('../src/constants.js');
 
 describe('大文件处理边界测试', () => {
@@ -156,7 +161,10 @@ describe('大文件处理边界测试', () => {
 
     test('应该正确处理超长单行代码', async () => {
       const filePath = path.join(tempDir, 'long-line.js');
-      const longLine = `export const x = { ${Array(1000).fill(0).map((_, i) => `key${i}: ${i}`).join(', ')} };`;
+      const longLine = `export const x = { ${Array(1000)
+        .fill(0)
+        .map((_, i) => `key${i}: ${i}`)
+        .join(', ')} };`;
       fs.writeFileSync(filePath, longLine);
 
       const finder = new DeadCodeFinder({
@@ -658,15 +666,25 @@ describe('配置验证边界测试', () => {
     });
 
     test('应该拒绝无效的 concurrency 值', () => {
-      expect(() => validateOptions({ concurrency: 0 })).toThrow('concurrency 必须在 1 到 1000 之间');
-      expect(() => validateOptions({ concurrency: 1001 })).toThrow('concurrency 必须在 1 到 1000 之间');
-      expect(() => validateOptions({ concurrency: -1 })).toThrow('concurrency 必须在 1 到 1000 之间');
+      expect(() => validateOptions({ concurrency: 0 })).toThrow(
+        'concurrency 必须在 1 到 1000 之间'
+      );
+      expect(() => validateOptions({ concurrency: 1001 })).toThrow(
+        'concurrency 必须在 1 到 1000 之间'
+      );
+      expect(() => validateOptions({ concurrency: -1 })).toThrow(
+        'concurrency 必须在 1 到 1000 之间'
+      );
       expect(() => validateOptions({ concurrency: 1.5 })).toThrow('concurrency 必须是整数');
     });
 
     test('应该拒绝无效的 maxFileSize 值', () => {
-      expect(() => validateOptions({ maxFileSize: -1 })).toThrow('maxFileSize 必须在 0 到 10MB 之间');
-      expect(() => validateOptions({ maxFileSize: 11 * 1024 * 1024 })).toThrow('maxFileSize 必须在 0 到 10MB 之间');
+      expect(() => validateOptions({ maxFileSize: -1 })).toThrow(
+        'maxFileSize 必须在 0 到 10MB 之间'
+      );
+      expect(() => validateOptions({ maxFileSize: 11 * 1024 * 1024 })).toThrow(
+        'maxFileSize 必须在 0 到 10MB 之间'
+      );
       expect(() => validateOptions({ maxFileSize: NaN })).toThrow('maxFileSize 必须是数字');
     });
 
@@ -743,7 +761,9 @@ describe('AST 解析器边界测试', () => {
 
   test('应该正确处理复杂的 TypeScript 类型', async () => {
     const filePath = path.join(tempDir, 'complex-types.ts');
-    fs.writeFileSync(filePath, `
+    fs.writeFileSync(
+      filePath,
+      `
       type DeepPartial<T> = {
         [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
       };
@@ -758,7 +778,8 @@ describe('AST 解析器边界测试', () => {
       }
       
       export type MappedType = { [K in keyof ComplexType]: ComplexType[K] };
-    `);
+    `
+    );
 
     const finder = new DeadCodeFinderAST({
       srcDir: tempDir,
@@ -774,14 +795,17 @@ describe('AST 解析器边界测试', () => {
 
   test('应该正确处理装饰器语法', async () => {
     const filePath = path.join(tempDir, 'decorators.ts');
-    fs.writeFileSync(filePath, `
+    fs.writeFileSync(
+      filePath,
+      `
       function Log(target: any, propertyKey: string, descriptor: PropertyDescriptor) {}
       
       export class DecoratedClass {
         @Log
         method() {}
       }
-    `);
+    `
+    );
 
     const finder = new DeadCodeFinderAST({
       srcDir: tempDir,
@@ -797,14 +821,17 @@ describe('AST 解析器边界测试', () => {
 
   test('应该正确处理动态导入', async () => {
     const filePath = path.join(tempDir, 'dynamic-import.js');
-    fs.writeFileSync(filePath, `
+    fs.writeFileSync(
+      filePath,
+      `
       export const loadModule = async () => {
         const module = await import('./other-module');
         return module;
       };
       
       export const lazyComponent = () => import('./Component');
-    `);
+    `
+    );
 
     const finder = new DeadCodeFinderAST({
       srcDir: tempDir,
@@ -822,7 +849,9 @@ describe('AST 解析器边界测试', () => {
 
   test('应该正确处理 Vue 3 Composition API', async () => {
     const filePath = path.join(tempDir, 'Composition.vue');
-    fs.writeFileSync(filePath, `
+    fs.writeFileSync(
+      filePath,
+      `
       <script setup>
       import { ref, computed, onMounted } from 'vue';
       
@@ -835,7 +864,8 @@ describe('AST 解析器边界测试', () => {
       
       export { count, doubled };
       </script>
-    `);
+    `
+    );
 
     const finder = new DeadCodeFinderAST({
       srcDir: tempDir,

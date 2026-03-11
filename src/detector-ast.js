@@ -12,11 +12,7 @@
 const fsPromises = require('fs').promises;
 const path = require('path');
 
-const {
-  IGNORE_MACROS,
-  IGNORE_EXPORTS,
-  NON_COMPONENT_DIRS,
-} = require('./constants.js');
+const { IGNORE_MACROS, IGNORE_EXPORTS, NON_COMPONENT_DIRS } = require('./constants.js');
 
 const { processParallel, printProgress, PerformanceStats, isSafePath } = require('./utils.js');
 const { DeadCodeFinderBase } = require('./detector-base.js');
@@ -216,12 +212,7 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
    */
   collectImports(ast) {
     const imports = walkImports(ast);
-    return [
-      ...imports.static,
-      ...imports.default,
-      ...imports.namespace,
-      ...imports.dynamic,
-    ];
+    return [...imports.static, ...imports.default, ...imports.namespace, ...imports.dynamic];
   }
 
   /**
@@ -412,7 +403,16 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
    * @private
    */
   processWorkerResult(result) {
-    const { relativePath, success, exports, imports, jsxComponents, componentInfo, vueInfo, error } = result;
+    const {
+      relativePath,
+      success,
+      exports,
+      imports,
+      jsxComponents,
+      componentInfo,
+      vueInfo,
+      error,
+    } = result;
 
     if (error) {
       console.warn(`⚠️  解析文件失败: ${result.filePath}`);
@@ -602,8 +602,7 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
     const results = [];
     for (const [file, exports] of batch) {
       const isSideEffectImported =
-        sideEffectImportedFiles.has(file) ||
-        sideEffectImportedFiles.has(file.replace(/^\.\//, ''));
+        sideEffectImportedFiles.has(file) || sideEffectImportedFiles.has(file.replace(/^\.\//, ''));
       for (const exp of exports) {
         if (await this.isExportUnused(exp, file, allImports, isSideEffectImported)) {
           results.push({ file, ...exp });
@@ -630,7 +629,11 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
 
     for (let i = 0; i < exportEntries.length; i += batchSize) {
       const batch = exportEntries.slice(i, i + batchSize);
-      const batchResults = await this.processExportBatch(batch, allImports, sideEffectImportedFiles);
+      const batchResults = await this.processExportBatch(
+        batch,
+        allImports,
+        sideEffectImportedFiles
+      );
       this.unusedExports.push(...batchResults);
 
       processed += batch.length;
@@ -643,7 +646,10 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
    * @param {Map} testImports - 测试导入
    */
   async detectUnusedComponents(testImports = new Map()) {
-    const componentUsages = this.componentDetector.collectComponentUsages(this.imports, testImports);
+    const componentUsages = this.componentDetector.collectComponentUsages(
+      this.imports,
+      testImports
+    );
 
     console.log('   构建组件标签索引...');
     const componentTagIndex = this.buildComponentTagIndex();
@@ -669,7 +675,9 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
     const jsxIndex = this.componentDetector.buildComponentTagIndexFromJSX(this.jsxUsage);
     this.componentDetector.mergeComponentTagIndex(componentTagIndex, jsxIndex);
 
-    const vueIndex = this.componentDetector.buildComponentTagIndexFromFileContents(this.fileContents);
+    const vueIndex = this.componentDetector.buildComponentTagIndexFromFileContents(
+      this.fileContents
+    );
     this.componentDetector.mergeComponentTagIndex(componentTagIndex, vueIndex);
 
     return componentTagIndex;

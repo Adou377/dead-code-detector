@@ -160,9 +160,8 @@ class Reporter {
    * @param {number|string} elapsedSeconds - 耗时（秒或格式化字符串）
    */
   static printAnalysisComplete(elapsedSeconds) {
-    const timeStr = typeof elapsedSeconds === 'string' 
-      ? elapsedSeconds 
-      : `${elapsedSeconds.toFixed(1)}s`;
+    const timeStr =
+      typeof elapsedSeconds === 'string' ? elapsedSeconds : `${elapsedSeconds.toFixed(1)}s`;
     console.log(`\n⏱️  分析完成，耗时 ${timeStr}\n`);
   }
 

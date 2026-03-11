@@ -74,7 +74,7 @@ import React from 'react';
       const relativePath = path.relative(fixturesDir, vueFile);
       expect(finder.fileContents.has(relativePath)).toBe(true);
       expect(finder.components.has(relativePath)).toBe(true);
-      
+
       const component = finder.components.get(relativePath);
       expect(component.name).toBe('TestVueComponent');
       expect(component.isGlobal).toBe(false);
@@ -86,7 +86,7 @@ import React from 'react';
 
       const relativePath = path.relative(fixturesDir, vueFile);
       expect(finder.components.has(relativePath)).toBe(true);
-      
+
       const component = finder.components.get(relativePath);
       expect(component.name).toBe('TheHeader');
       expect(component.isGlobal).toBe(true);
@@ -98,7 +98,7 @@ import React from 'react';
 
       const relativePath = path.relative(fixturesDir, vueFile);
       expect(finder.components.has(relativePath)).toBe(true);
-      
+
       const component = finder.components.get(relativePath);
       expect(component.name).toBe('App');
       expect(component.isGlobal).toBe(true);
@@ -111,7 +111,7 @@ import React from 'react';
       const relativePath = path.relative(fixturesDir, jsxFile);
       expect(finder.fileContents.has(relativePath)).toBe(true);
       expect(finder.components.has(relativePath)).toBe(true);
-      
+
       const component = finder.components.get(relativePath);
       expect(component.name).toBe('ReactButton');
     });
@@ -135,13 +135,13 @@ import React from 'react';
 
     test('应该处理文件读取错误', async () => {
       const nonExistentFile = path.join(fixturesDir, 'non-existent-file.js');
-      
+
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-      
+
       await finder.parseFile(nonExistentFile);
-      
+
       expect(consoleSpy).toHaveBeenCalled();
-      
+
       consoleSpy.mockRestore();
     });
 
@@ -157,7 +157,7 @@ import React from 'react';
         }
         </script>
       `;
-      
+
       const localComponents = finder.extractVueComponents(content);
       expect(localComponents).toContain('ChildComponent');
       expect(localComponents).toContain('AnotherChild');
@@ -177,7 +177,7 @@ import React from 'react';
       finder.unusedExports = [
         new UnusedExportItem('file1.js', 'foo', 'named', 1, 'export const foo = 1'),
         new UnusedExportItem('file1.js', 'bar', 'named', 2, 'export const bar = 2'),
-        new UnusedExportItem('file2.js', 'baz', 'named', 1, 'export const baz = 3')
+        new UnusedExportItem('file2.js', 'baz', 'named', 1, 'export const baz = 3'),
       ];
 
       const result = finder.groupByFile(finder.unusedExports);
@@ -239,10 +239,13 @@ import React from 'react';
       const tempDir = path.join(__dirname, 'temp-tsx-test');
       fs.mkdirSync(tempDir, { recursive: true });
       const tsxFile = path.join(tempDir, 'Component.tsx');
-      fs.writeFileSync(tsxFile, `
+      fs.writeFileSync(
+        tsxFile,
+        `
         import React from 'react';
         export const Component: React.FC = () => <div>Test</div>;
-      `);
+      `
+      );
 
       const tempFinder = new DeadCodeFinder({
         srcDir: tempDir,
@@ -330,12 +333,15 @@ import React from 'react';
       const tempDir = path.join(__dirname, 'temp-vue-index-test');
       fs.mkdirSync(tempDir, { recursive: true });
       const indexFile = path.join(tempDir, 'index.vue');
-      fs.writeFileSync(indexFile, `
+      fs.writeFileSync(
+        indexFile,
+        `
         <template><div>Index</div></template>
         <script>
         export default { name: 'Index' }
         </script>
-      `);
+      `
+      );
 
       const tempFinder = new DeadCodeFinder({
         srcDir: tempDir,
@@ -391,7 +397,9 @@ import React from 'react';
       const tempDir = path.join(__dirname, 'temp-local-comp-test');
       fs.mkdirSync(tempDir, { recursive: true });
       const jsFile = path.join(tempDir, 'app.js');
-      fs.writeFileSync(jsFile, `
+      fs.writeFileSync(
+        jsFile,
+        `
         import ChildComponent from './ChildComponent.vue';
         export default {
           components: {
@@ -399,7 +407,8 @@ import React from 'react';
             AnotherChild: () => import('./AnotherChild.vue')
           }
         }
-      `);
+      `
+      );
 
       const tempFinder = new DeadCodeFinder({
         srcDir: tempDir,

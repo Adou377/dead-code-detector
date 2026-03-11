@@ -331,14 +331,17 @@ describe('detector.js - 边界情况和错误处理测试', () => {
       const tempDir = path.join(__dirname, 'temp-invalid-vue-script-test');
       fs.mkdirSync(tempDir, { recursive: true });
       const invalidVueFile = path.join(tempDir, 'InvalidScript.vue');
-      fs.writeFileSync(invalidVueFile, `
+      fs.writeFileSync(
+        invalidVueFile,
+        `
         <template>
           <div>Hello</div>
         </template>
         <script>
         export default { name: 'Test'
         </script>
-      `);
+      `
+      );
 
       const tempFinder = new DeadCodeFinder({
         srcDir: tempDir,
@@ -360,11 +363,14 @@ describe('detector.js - 边界情况和错误处理测试', () => {
       const tempDir = path.join(__dirname, 'temp-no-script-vue-test');
       fs.mkdirSync(tempDir, { recursive: true });
       const noScriptVueFile = path.join(tempDir, 'NoScript.vue');
-      fs.writeFileSync(noScriptVueFile, `
+      fs.writeFileSync(
+        noScriptVueFile,
+        `
         <template>
           <div>Hello</div>
         </template>
-      `);
+      `
+      );
 
       const tempFinder = new DeadCodeFinder({
         srcDir: tempDir,
@@ -470,11 +476,14 @@ describe('detector.js - 边界情况和错误处理测试', () => {
       fs.writeFileSync(path.join(tempDir, 'component.jsx'), 'export const jsx = 2;');
       fs.writeFileSync(path.join(tempDir, 'types.ts'), 'export const ts = 3;');
       fs.writeFileSync(path.join(tempDir, 'Component.tsx'), 'export const tsx = 4;');
-      fs.writeFileSync(path.join(tempDir, 'VueComp.vue'), `
+      fs.writeFileSync(
+        path.join(tempDir, 'VueComp.vue'),
+        `
         <script>
         export const vue = 5;
         </script>
-      `);
+      `
+      );
 
       const tempFinder = new DeadCodeFinder({
         srcDir: tempDir,
@@ -519,11 +528,14 @@ describe('detector.js - 边界情况和错误处理测试', () => {
       const tempDir = path.join(__dirname, 'temp-unicode-test');
       fs.mkdirSync(tempDir, { recursive: true });
       const unicodeFile = path.join(tempDir, 'unicode.js');
-      fs.writeFileSync(unicodeFile, `
+      fs.writeFileSync(
+        unicodeFile,
+        `
         const 你好 = '世界';
         const emoji = '🎉';
         export { 你好, emoji };
-      `);
+      `
+      );
 
       const tempFinder = new DeadCodeFinder({
         srcDir: tempDir,

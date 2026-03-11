@@ -265,14 +265,17 @@ describe('PathResolver', () => {
     test('应该加载 tsconfig.json 中的路径别名', () => {
       const rootDir = path.dirname(testDir);
       const tsconfigPath = path.join(rootDir, 'tsconfig.json');
-      fs.writeFileSync(tsconfigPath, JSON.stringify({
-        compilerOptions: {
-          paths: {
-            '@/*': ['src/*'],
-            '@components/*': ['src/components/*'],
+      fs.writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            paths: {
+              '@/*': ['src/*'],
+              '@components/*': ['src/components/*'],
+            },
           },
-        },
-      }));
+        })
+      );
 
       // 清除缓存以确保重新加载
       PathResolver.clearCache();
@@ -406,20 +409,20 @@ describe('PathResolver', () => {
     test('应该限制配置缓存大小', () => {
       // 清除现有缓存
       PathResolver.clearCache();
-      
+
       // 创建多个解析器实例，超过缓存限制
       const cacheLimit = 100;
       const tempDirs = [];
-      
+
       for (let i = 0; i < cacheLimit + 5; i++) {
         const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `cache-test-${i}-`));
         tempDirs.push(tempDir);
         new PathResolver(path.join(tempDir, 'src'));
       }
-      
+
       // 验证缓存大小不超过限制
       expect(PathResolver.configCache.size).toBeLessThanOrEqual(cacheLimit);
-      
+
       // 清理临时目录
       tempDirs.forEach(dir => {
         if (fs.existsSync(dir)) {
@@ -431,30 +434,33 @@ describe('PathResolver', () => {
     test('应该从缓存中读取配置', () => {
       const rootDir = path.dirname(testDir);
       const tsconfigPath = path.join(rootDir, 'tsconfig.json');
-      
+
       // 创建 tsconfig.json 文件
-      fs.writeFileSync(tsconfigPath, JSON.stringify({
-        compilerOptions: {
-          paths: {
-            '@/*': ['src/*'],
+      fs.writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            paths: {
+              '@/*': ['src/*'],
+            },
           },
-        },
-      }));
-      
+        })
+      );
+
       // 清除缓存
       PathResolver.clearCache();
-      
+
       // 第一次创建解析器，应该加载配置
       const resolver1 = new PathResolver(testDir);
       const aliases1 = resolver1.getCustomAliases();
-      
+
       // 第二次创建解析器，应该从缓存中读取
       const resolver2 = new PathResolver(testDir);
       const aliases2 = resolver2.getCustomAliases();
-      
+
       // 验证两个解析器的别名相同
       expect(aliases1).toEqual(aliases2);
-      
+
       // 清理
       fs.unlinkSync(tsconfigPath);
       PathResolver.clearCache();
@@ -467,12 +473,12 @@ describe('PathResolver', () => {
       fs.mkdirSync(externalDir);
       const externalFile = path.join(externalDir, 'module.js');
       fs.writeFileSync(externalFile, 'export const foo = 1;');
-      
+
       // 尝试解析外部路径
       const result = resolver.resolve(path.relative(testDir, externalFile), 'test.js');
-      
+
       expect(result).toBeNull();
-      
+
       // 清理
       fs.rmSync(externalDir, { recursive: true, force: true });
     });
@@ -495,15 +501,18 @@ describe('PathResolver', () => {
       fs.mkdirSync(tempSrcDir);
 
       const tsconfigPath = path.join(tempRoot, 'tsconfig.json');
-      fs.writeFileSync(tsconfigPath, JSON.stringify({
-        compilerOptions: {
-          baseUrl: '.',
-          paths: {
-            '@/*': ['src/*'],
-            '@components/*': ['src/components/*'],
+      fs.writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            baseUrl: '.',
+            paths: {
+              '@/*': ['src/*'],
+              '@components/*': ['src/components/*'],
+            },
           },
-        },
-      }));
+        })
+      );
 
       PathResolver.clearCache();
       const newResolver = new PathResolver(tempSrcDir);
@@ -522,14 +531,17 @@ describe('PathResolver', () => {
       fs.mkdirSync(tempSrcDir);
 
       const tsconfigPath = path.join(tempRoot, 'tsconfig.json');
-      fs.writeFileSync(tsconfigPath, JSON.stringify({
-        compilerOptions: {
-          baseUrl: './src',
-          paths: {
-            '@/*': ['./*'],
+      fs.writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            baseUrl: './src',
+            paths: {
+              '@/*': ['./*'],
+            },
           },
-        },
-      }));
+        })
+      );
 
       PathResolver.clearCache();
       const newResolver = new PathResolver(tempSrcDir);
@@ -547,11 +559,14 @@ describe('PathResolver', () => {
       fs.mkdirSync(tempSrcDir);
 
       const tsconfigPath = path.join(tempRoot, 'tsconfig.json');
-      fs.writeFileSync(tsconfigPath, JSON.stringify({
-        compilerOptions: {
-          paths: {},
-        },
-      }));
+      fs.writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            paths: {},
+          },
+        })
+      );
 
       PathResolver.clearCache();
       const newResolver = new PathResolver(tempSrcDir);
@@ -569,14 +584,17 @@ describe('PathResolver', () => {
       fs.mkdirSync(tempSrcDir);
 
       const tsconfigPath = path.join(tempRoot, 'tsconfig.json');
-      fs.writeFileSync(tsconfigPath, JSON.stringify({
-        compilerOptions: {
-          paths: {
-            '@/*': [],
-            '@utils/*': null,
+      fs.writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            paths: {
+              '@/*': [],
+              '@utils/*': null,
+            },
           },
-        },
-      }));
+        })
+      );
 
       PathResolver.clearCache();
       const newResolver = new PathResolver(tempSrcDir);
@@ -596,7 +614,9 @@ describe('PathResolver', () => {
       fs.mkdirSync(tempSrcDir);
 
       const viteConfigPath = path.join(tempRoot, 'vite.config.js');
-      fs.writeFileSync(viteConfigPath, `
+      fs.writeFileSync(
+        viteConfigPath,
+        `
 module.exports = {
   resolve: {
     alias: {
@@ -605,7 +625,8 @@ module.exports = {
     }
   }
 }
-`);
+`
+      );
 
       PathResolver.clearCache();
       const newResolver = new PathResolver(tempSrcDir);
@@ -624,7 +645,9 @@ module.exports = {
       fs.mkdirSync(tempSrcDir);
 
       const viteConfigPath = path.join(tempRoot, 'vite.config.js');
-      fs.writeFileSync(viteConfigPath, `
+      fs.writeFileSync(
+        viteConfigPath,
+        `
 module.exports = {
   resolve: {
     alias: [
@@ -633,7 +656,8 @@ module.exports = {
     ]
   }
 }
-`);
+`
+      );
 
       PathResolver.clearCache();
       const newResolver = new PathResolver(tempSrcDir);
@@ -652,11 +676,14 @@ module.exports = {
       fs.mkdirSync(tempSrcDir);
 
       const viteConfigPath = path.join(tempRoot, 'vite.config.js');
-      fs.writeFileSync(viteConfigPath, `
+      fs.writeFileSync(
+        viteConfigPath,
+        `
 module.exports = {
   plugins: []
 }
-`);
+`
+      );
 
       PathResolver.clearCache();
       const newResolver = new PathResolver(tempSrcDir);
@@ -676,7 +703,9 @@ module.exports = {
       fs.mkdirSync(tempSrcDir);
 
       const webpackConfigPath = path.join(tempRoot, 'webpack.config.js');
-      fs.writeFileSync(webpackConfigPath, `
+      fs.writeFileSync(
+        webpackConfigPath,
+        `
 const path = require('path');
 module.exports = {
   resolve: {
@@ -686,7 +715,8 @@ module.exports = {
     }
   }
 }
-`);
+`
+      );
 
       PathResolver.clearCache();
       const newResolver = new PathResolver(tempSrcDir);
@@ -705,7 +735,9 @@ module.exports = {
       fs.mkdirSync(tempSrcDir);
 
       const webpackConfigPath = path.join(tempRoot, 'webpack.config.js');
-      fs.writeFileSync(webpackConfigPath, `
+      fs.writeFileSync(
+        webpackConfigPath,
+        `
 module.exports = function(env) {
   return {
     resolve: {
@@ -715,7 +747,8 @@ module.exports = function(env) {
     }
   }
 }
-`);
+`
+      );
 
       PathResolver.clearCache();
       const newResolver = new PathResolver(tempSrcDir);
@@ -736,7 +769,9 @@ module.exports = function(env) {
       fs.mkdirSync(tempSrcDir);
 
       const vueConfigPath = path.join(tempRoot, 'vue.config.js');
-      fs.writeFileSync(vueConfigPath, `
+      fs.writeFileSync(
+        vueConfigPath,
+        `
 const path = require('path');
 module.exports = {
   configureWebpack: {
@@ -748,7 +783,8 @@ module.exports = {
     }
   }
 }
-`);
+`
+      );
 
       PathResolver.clearCache();
       const newResolver = new PathResolver(tempSrcDir);
@@ -767,13 +803,16 @@ module.exports = {
       fs.mkdirSync(tempSrcDir);
 
       const vueConfigPath = path.join(tempRoot, 'vue.config.js');
-      fs.writeFileSync(vueConfigPath, `
+      fs.writeFileSync(
+        vueConfigPath,
+        `
 module.exports = {
   chainWebpack: config => {
     config.resolve.alias.set('@', path.resolve(__dirname, 'src'));
   }
 }
-`);
+`
+      );
 
       PathResolver.clearCache();
       const newResolver = new PathResolver(tempSrcDir);
@@ -801,7 +840,7 @@ module.exports = {
     test('应该处理别名路径指向目录外的文件', () => {
       const externalDir = path.join(os.tmpdir(), 'external-alias');
       fs.mkdirSync(externalDir, { recursive: true });
-      
+
       resolver.customAliases = {
         '@external/': externalDir,
       };
@@ -830,9 +869,9 @@ module.exports = {
     test('应该处理模块循环引用', () => {
       const moduleA = path.join(testDir, 'moduleA.js');
       const moduleB = path.join(testDir, 'moduleB.js');
-      
-      fs.writeFileSync(moduleA, 'import { b } from \'./moduleB\'; export const a = \'a\';');
-      fs.writeFileSync(moduleB, 'import { a } from \'./moduleA\'; export const b = \'b\';');
+
+      fs.writeFileSync(moduleA, "import { b } from './moduleB'; export const a = 'a';");
+      fs.writeFileSync(moduleB, "import { a } from './moduleA'; export const b = 'b';");
 
       const resultA = resolver.resolve('./moduleA.js', 'test.js');
       const resultB = resolver.resolve('./moduleB.js', 'test.js');
@@ -856,7 +895,10 @@ module.exports = {
 
     test('应该处理自身引用', () => {
       const moduleFile = path.join(testDir, 'selfRef.js');
-      fs.writeFileSync(moduleFile, 'import { something } from \'./selfRef\'; export const something = \'test\';');
+      fs.writeFileSync(
+        moduleFile,
+        "import { something } from './selfRef'; export const something = 'test';"
+      );
 
       const result = resolver.resolve('./selfRef.js', 'selfRef.js');
 
@@ -872,15 +914,20 @@ module.exports = {
       const tsconfigPath = path.join(rootDir, 'tsconfig.json');
       const viteConfigPath = path.join(rootDir, 'vite.config.js');
 
-      fs.writeFileSync(tsconfigPath, JSON.stringify({
-        compilerOptions: {
-          paths: {
-            '@/*': ['src/*'],
+      fs.writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            paths: {
+              '@/*': ['src/*'],
+            },
           },
-        },
-      }));
+        })
+      );
 
-      fs.writeFileSync(viteConfigPath, `
+      fs.writeFileSync(
+        viteConfigPath,
+        `
 module.exports = {
   resolve: {
     alias: {
@@ -888,7 +935,8 @@ module.exports = {
     }
   }
 }
-`);
+`
+      );
 
       PathResolver.clearCache();
       const newResolver = new PathResolver(testDir);

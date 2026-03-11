@@ -262,9 +262,9 @@ describe('Utils', () => {
       const stats = new PerformanceStats();
       stats.start();
       expect(stats.startTime).toBeGreaterThan(0);
-      
+
       await new Promise(resolve => setTimeout(resolve, 10));
-      
+
       stats.end();
       expect(stats.endTime).toBeGreaterThan(0);
       expect(stats.endTime).toBeGreaterThanOrEqual(stats.startTime);
@@ -274,7 +274,7 @@ describe('Utils', () => {
       const stats = new PerformanceStats();
       stats.recordFile();
       expect(stats.fileCount).toBe(1);
-      
+
       stats.recordFile(5);
       expect(stats.fileCount).toBe(6);
     });
@@ -283,7 +283,7 @@ describe('Utils', () => {
       const stats = new PerformanceStats();
       stats.recordExport();
       expect(stats.exportCount).toBe(1);
-      
+
       stats.recordExport(10);
       expect(stats.exportCount).toBe(11);
     });
@@ -292,7 +292,7 @@ describe('Utils', () => {
       const stats = new PerformanceStats();
       stats.recordComponent();
       expect(stats.componentCount).toBe(1);
-      
+
       stats.recordComponent(3);
       expect(stats.componentCount).toBe(4);
     });
@@ -302,7 +302,7 @@ describe('Utils', () => {
       stats.start();
       await new Promise(resolve => setTimeout(resolve, 50));
       stats.end();
-      
+
       const elapsed = stats.getElapsedTime();
       expect(elapsed).toBeGreaterThanOrEqual(50);
     });
@@ -311,7 +311,7 @@ describe('Utils', () => {
       const stats = new PerformanceStats();
       stats.startTime = Date.now();
       stats.endTime = stats.startTime + 500;
-      
+
       expect(stats.getFormattedTime()).toBe('500ms');
     });
 
@@ -319,7 +319,7 @@ describe('Utils', () => {
       const stats = new PerformanceStats();
       stats.startTime = Date.now();
       stats.endTime = stats.startTime + 1500;
-      
+
       expect(stats.getFormattedTime()).toBe('1.50s');
     });
 
@@ -337,7 +337,7 @@ describe('Utils', () => {
       stats.recordExport(20);
       stats.recordComponent(5);
       stats.end();
-      
+
       const report = stats.getReport();
       expect(report.fileCount).toBe(10);
       expect(report.exportCount).toBe(20);
@@ -350,9 +350,9 @@ describe('Utils', () => {
     test('should track memory peak during monitoring', async () => {
       const stats = new PerformanceStats();
       stats.start();
-      
+
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       stats.end();
       expect(stats.memoryPeak).toBeGreaterThan(0);
     });

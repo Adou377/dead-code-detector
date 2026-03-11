@@ -20,11 +20,9 @@ describe('detector.js - 未使用代码检测测试', () => {
   describe('detectUnusedExports 方法', () => {
     test('应该检测未使用的命名导出', async () => {
       finder.exports.set('utils/helpers.js', [
-        new ExportItem('unusedFunction', 'named', 1, 'export const unusedFunction = () => {}')
+        new ExportItem('unusedFunction', 'named', 1, 'export const unusedFunction = () => {}'),
       ]);
-      finder.imports.set('other.js', [
-        new ImportItem('otherFunction', './other', false, true)
-      ]);
+      finder.imports.set('other.js', [new ImportItem('otherFunction', './other', false, true)]);
 
       await finder.detectUnusedExports(new Map());
 
@@ -34,7 +32,7 @@ describe('detector.js - 未使用代码检测测试', () => {
 
     test('应该检测未使用的默认导出', async () => {
       finder.exports.set('utils/default.js', [
-        new ExportItem('UnusedDefault', 'default', 1, 'export default class UnusedDefault {}')
+        new ExportItem('UnusedDefault', 'default', 1, 'export default class UnusedDefault {}'),
       ]);
 
       await finder.detectUnusedExports(new Map());
@@ -44,23 +42,23 @@ describe('detector.js - 未使用代码检测测试', () => {
 
     test('应该排除副作用导入的文件', async () => {
       finder.exports.set('./styles.js', [
-        new ExportItem('unusedStyle', 'named', 1, 'export const unusedStyle = {}')
+        new ExportItem('unusedStyle', 'named', 1, 'export const unusedStyle = {}'),
       ]);
-      finder.imports.set('app.js', [
-        new ImportItem('', './styles.js', false, true, false, true)
-      ]);
-      
+      finder.imports.set('app.js', [new ImportItem('', './styles.js', false, true, false, true)]);
+
       jest.spyOn(finder, 'resolveImportPath').mockReturnValue('./styles.js');
 
       await finder.detectUnusedExports(new Map());
 
-      const hasStylesJs = finder.unusedExports.some(e => e.file === './styles.js' || e.file === 'styles.js');
+      const hasStylesJs = finder.unusedExports.some(
+        e => e.file === './styles.js' || e.file === 'styles.js'
+      );
       expect(hasStylesJs).toBe(false);
     });
 
     test('应该排除被测试文件导入的导出', async () => {
       finder.exports.set('utils/tested.js', [
-        new ExportItem('testedFunction', 'named', 1, 'export const testedFunction = () => {}')
+        new ExportItem('testedFunction', 'named', 1, 'export const testedFunction = () => {}'),
       ]);
 
       const testImports = new Map([['testedFunction', new Set(['tested.test.js'])]]);
@@ -102,9 +100,7 @@ describe('detector.js - 未使用代码检测测试', () => {
       finder.exports.set('styles.js', [
         new ExportItem('exportedStyle', 'named', 1, 'export const exportedStyle = {}'),
       ]);
-      finder.imports.set('app.js', [
-        new ImportItem('', './styles.js', false, true, false, true),
-      ]);
+      finder.imports.set('app.js', [new ImportItem('', './styles.js', false, true, false, true)]);
 
       jest.spyOn(finder, 'resolveImportPath').mockReturnValue('styles.js');
 
@@ -133,9 +129,7 @@ describe('detector.js - 未使用代码检测测试', () => {
         new ImportItem('foo', './module1', false, true),
         new ImportItem('bar', './module2', false, true),
       ]);
-      finder.imports.set('file2.js', [
-        new ImportItem('foo', './module1', false, true),
-      ]);
+      finder.imports.set('file2.js', [new ImportItem('foo', './module1', false, true)]);
 
       const result = finder.buildAllImportsIndex(new Map());
 
@@ -145,9 +139,7 @@ describe('detector.js - 未使用代码检测测试', () => {
     });
 
     test('应该排除外部导入', () => {
-      finder.imports.set('file1.js', [
-        new ImportItem('React', 'react', false, false),
-      ]);
+      finder.imports.set('file1.js', [new ImportItem('React', 'react', false, false)]);
 
       const result = finder.buildAllImportsIndex(new Map());
 
@@ -155,9 +147,7 @@ describe('detector.js - 未使用代码检测测试', () => {
     });
 
     test('应该合并测试导入', () => {
-      finder.imports.set('file1.js', [
-        new ImportItem('foo', './module', false, true),
-      ]);
+      finder.imports.set('file1.js', [new ImportItem('foo', './module', false, true)]);
 
       const testImports = new Map([['bar', new Set(['test.js'])]]);
 

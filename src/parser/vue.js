@@ -22,12 +22,7 @@ const VUE3_MACROS = [
 /**
  * Vue 3 组合式函数模式（预编译正则）
  */
-const COMPOSABLE_PATTERNS = [
-  /^use[A-Z]/,
-  /^fetch[A-Z]/,
-  /^get[A-Z]/,
-  /^load[A-Z]/,
-];
+const COMPOSABLE_PATTERNS = [/^use[A-Z]/, /^fetch[A-Z]/, /^get[A-Z]/, /^load[A-Z]/];
 
 /**
  * 预编译的 Vue 模板解析正则表达式
@@ -135,7 +130,30 @@ function extractTemplateInfo(templateContent) {
   let match;
   while ((match = VUE_TEMPLATE_REGEX.pascalComponent.exec(templateContent)) !== null) {
     const componentName = match[1];
-    const svgTags = ['Svg', 'Path', 'Circle', 'Rect', 'Line', 'Polygon', 'Polyline', 'Ellipse', 'G', 'Defs', 'Use', 'Symbol', 'Text', 'Tspan', 'LinearGradient', 'RadialGradient', 'Stop', 'ClipPath', 'Mask', 'Pattern', 'Image', 'ForeignObject'];
+    const svgTags = [
+      'Svg',
+      'Path',
+      'Circle',
+      'Rect',
+      'Line',
+      'Polygon',
+      'Polyline',
+      'Ellipse',
+      'G',
+      'Defs',
+      'Use',
+      'Symbol',
+      'Text',
+      'Tspan',
+      'LinearGradient',
+      'RadialGradient',
+      'Stop',
+      'ClipPath',
+      'Mask',
+      'Pattern',
+      'Image',
+      'ForeignObject',
+    ];
     if (!svgTags.includes(componentName)) {
       if (!info.components.includes(componentName)) {
         info.components.push(componentName);
@@ -232,10 +250,12 @@ function parseVueComponent(content) {
           if (specifier.isImportSpecifier()) {
             const imported = specifier.get('imported').node.name;
             if (imported.startsWith('on') || VUE3_MACROS.includes(imported)) {
-            } else if (COMPOSABLE_PATTERNS.some(p => {
-              p.lastIndex = 0;
-              return p.test(imported);
-            })) {
+            } else if (
+              COMPOSABLE_PATTERNS.some(p => {
+                p.lastIndex = 0;
+                return p.test(imported);
+              })
+            ) {
               result.composables.push(imported);
             }
           }
@@ -250,10 +270,12 @@ function parseVueComponent(content) {
         if (VUE_TEMPLATE_REGEX.pascalCaseTest.test(name) && !VUE3_MACROS.includes(name)) {
           result.components.push(name);
         }
-        if (COMPOSABLE_PATTERNS.some(p => {
-          p.lastIndex = 0;
-          return p.test(name);
-        })) {
+        if (
+          COMPOSABLE_PATTERNS.some(p => {
+            p.lastIndex = 0;
+            return p.test(name);
+          })
+        ) {
           result.composables.push(name);
         }
       }
@@ -275,7 +297,12 @@ function parseVueComponent(content) {
   const traverse = require('@babel/traverse').default;
   traverse(astResult.ast, componentVisitor);
 
-  if (result.hasScriptSetup || result.components.length > 0 || result.composables.length > 0 || result.hasTemplate) {
+  if (
+    result.hasScriptSetup ||
+    result.components.length > 0 ||
+    result.composables.length > 0 ||
+    result.hasTemplate
+  ) {
     result.isComponent = true;
   }
 

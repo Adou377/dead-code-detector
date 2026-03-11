@@ -208,10 +208,7 @@ describe('Vue Parser', () => {
   const fixturePath = path.join(__dirname, 'fixtures/components');
 
   test('should parse Vue SFC', () => {
-    const vueContent = readFileSync(
-      path.join(fixturePath, 'TestVueComponent.vue'),
-      'utf-8'
-    );
+    const vueContent = readFileSync(path.join(fixturePath, 'TestVueComponent.vue'), 'utf-8');
     const result = parseVue(vueContent);
     expect(result.script).toBeDefined();
   });
@@ -248,10 +245,10 @@ Arrange（准备）→ Act（执行）→ Assert（断言）
 test('should detect unused export', () => {
   // Arrange
   const finder = new DeadCodeFinderAST({ srcDir: './src' });
-  
+
   // Act
   const result = finder.detect();
-  
+
   // Assert
   expect(result.unusedExports).toContain('unusedFunction');
 });
@@ -402,7 +399,8 @@ npx husky add .husky/pre-commit "npm test"
 
 ### Q: 测试运行很慢怎么办？
 
-**A:** 
+**A:**
+
 1. 使用 `--onlyChanged` 只运行修改的测试
 2. 使用 `--maxWorkers` 限制并行数
 3. 检查是否有重复的初始化代码
@@ -414,7 +412,7 @@ npx husky add .husky/pre-commit "npm test"
 ```javascript
 jest.mock('fs', () => ({
   readFileSync: jest.fn(() => 'mocked content'),
-  existsSync: jest.fn(() => true)
+  existsSync: jest.fn(() => true),
 }));
 ```
 
