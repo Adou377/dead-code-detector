@@ -1,7 +1,7 @@
 {
   "name": "@is_adou/dead-code-detector",
   "version": "1.1.0",
-  "description": "死代码检测工具 - 检测未使用的导出、Vue/React 组件",
+  "description": "Dead code detector - detect unused exports, Vue/React components",
   "main": "src/index.js",
   "types": "types/index.d.ts",
   "bin": {
