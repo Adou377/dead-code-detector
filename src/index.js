@@ -159,16 +159,31 @@ async function run() {
   console.log(`   并行读取: 最多 ${concurrency} 个文件同时处理`);
 
   // 增量分析模式
+  let incrementalResult = null;
+  let shouldUseIncremental = false;
+
   if (incremental) {
     if (!isIncrementalSupported(srcDir)) {
       console.log('\n⚠️  当前目录不是 Git 仓库，将使用全量分析模式\n');
     } else {
-      const currentBranch = getCurrentBranch(srcDir);
-      const lastCommit = getLastCommitHash(srcDir);
-      console.log('   增量分析: 启用');
-      console.log(`   当前分支: ${currentBranch || '未知'}`);
-      console.log(`   基准分支: ${baseBranch}`);
-      console.log(`   最近提交: ${lastCommit || '未知'}\n`);
+      // 获取变更文件（自动检测或使用指定分支）
+      incrementalResult = getChangedFiles(srcDir, baseBranch || null);
+
+      if (incrementalResult.fallback) {
+        // 无法进行增量分析，回退到全量分析
+        console.log(`\n⚠️  增量分析不可用: ${incrementalResult.reason}`);
+        console.log('   将使用全量分析模式\n');
+        console.log('   💡 提示: 如果主分支名称不是 main 或 master，请使用 --base-branch 指定');
+        console.log('   例如: dead-code --incremental --base-branch develop\n');
+      } else {
+        shouldUseIncremental = true;
+        const currentBranch = getCurrentBranch(srcDir);
+        const lastCommit = getLastCommitHash(srcDir);
+        console.log('   增量分析: 启用');
+        console.log(`   当前分支: ${currentBranch || '未知'}`);
+        console.log(`   基准分支: ${incrementalResult.branch}${incrementalResult.autoDetected ? ' (自动检测)' : ''}`);
+        console.log(`   最近提交: ${lastCommit || '未知'}\n`);
+      }
     }
   } else {
     console.log('');
@@ -198,9 +213,9 @@ async function run() {
 
   await finder.analyze();
 
-  // 如果启用增量分析，过滤结果
-  if (incremental && isIncrementalSupported(srcDir)) {
-    const changedFiles = getChangedFiles(srcDir, baseBranch);
+  // 如果启用增量分析且成功获取变更文件，过滤结果
+  if (incremental && shouldUseIncremental) {
+    const changedFiles = incrementalResult.files;
     if (changedFiles && changedFiles.length > 0) {
       console.log(`\n📊 增量分析: 检测到 ${changedFiles.length} 个变更文件\n`);
       finder.unusedExports = filterUnusedExports(finder.unusedExports, new Set(changedFiles));
@@ -224,6 +239,7 @@ async function run() {
     console.log('💡 提示:');
     console.log('   - 使用 --fix 参数自动删除未使用代码');
     console.log('   - 使用 --incremental 参数进行增量分析');
+    console.log('   - 使用 --base-branch 指定增量分析的基准分支');
     console.log('   - 手动确认后，删除对应的 export 语句');
   }
 }

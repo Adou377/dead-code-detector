@@ -11,6 +11,7 @@ This guide helps you migrate from other dead code detection tools to Dead Code D
   - [From depcheck](#from-depcheck)
   - [From ESLint no-unused-vars](#from-eslint-no-unused-vars)
 - [Version Upgrade Guide](#version-upgrade-guide)
+  - [From 1.0.x to 1.1.x](#from-10x-to-11x)
   - [From 0.x to 1.0.0](#from-0x-to-100)
   - [Future Version Upgrades](#future-version-upgrades)
 - [Configuration Migration](#configuration-migration)
@@ -33,7 +34,8 @@ This guide helps you migrate from other dead code detection tools to Dead Code D
 | React Support | Via TypeScript | Native JSX/TSX support |
 | Auto-fix | No | Yes |
 | Detection Mode | Single mode | AST + Regex modes |
-| Cache | No | Yes (persistent) |
+| Cache | No | Yes (persistent LRU) |
+| Incremental Analysis | No | Yes (Git-based) |
 | Component Detection | No | Yes |
 
 #### Migration Steps
@@ -109,6 +111,7 @@ This guide helps you migrate from other dead code detection tools to Dead Code D
 | Auto-fix | No | Yes |
 | Component Detection | No | Yes |
 | Path Alias | Manual | Auto-detect |
+| Incremental Analysis | No | Yes |
 
 #### Migration Steps
 
@@ -167,6 +170,7 @@ This guide helps you migrate from other dead code detection tools to Dead Code D
 | Vue Support | Limited | Full |
 | Auto-fix | No | Yes |
 | Standalone | No | Yes |
+| Incremental Analysis | No | Yes |
 
 #### Migration Steps
 
@@ -190,7 +194,7 @@ This guide helps you migrate from other dead code detection tools to Dead Code D
 
 2. **Install Dead Code Detector**:
    ```bash
-   npm install dead-code-detector --save-dev
+   npm install @is_adou/dead-code-detector --save-dev
    ```
 
 3. **Create configuration file**:
@@ -219,6 +223,7 @@ This guide helps you migrate from other dead code detection tools to Dead Code D
 - **Faster iteration**: No need to wait for webpack compilation
 - **Auto-fix capability**: Automatically remove unused code
 - **Better Vue support**: Native Vue 2/3 and `<script setup>` support
+- **Incremental analysis**: Only analyze changed files
 
 ---
 
@@ -261,6 +266,7 @@ ESLint's `no-unused-vars` rule detects unused variables within files. Dead Code 
 | Exports | Not tracked | Primary focus |
 | Components | Limited | Full support |
 | Auto-fix | Yes (limited) | Yes (comprehensive) |
+| Incremental | No | Yes |
 
 #### Recommended Setup
 
@@ -279,6 +285,117 @@ Use both together:
 ---
 
 ## Version Upgrade Guide
+
+### From 1.0.x to 1.1.x
+
+Version 1.1.x introduces several new features and improvements.
+
+#### New Features in 1.1.x
+
+##### 1. Incremental Analysis
+
+Only analyze files that have changed since the last Git commit:
+
+```bash
+# Analyze only changed files
+dead-code --incremental
+
+# Analyze changes since specific commit
+dead-code --incremental --since HEAD~5
+```
+
+##### 2. Persistent Cache
+
+LRU cache for faster re-runs:
+
+```bash
+# Enable cache (default)
+dead-code --cache
+
+# Clear cache
+dead-code --clear-cache
+
+# Disable cache
+dead-code --no-cache
+```
+
+##### 3. Dependency Graph
+
+Visualize and analyze dependency relationships:
+
+```javascript
+const { DependencyGraph } = require('@is_adou/dead-code-detector');
+
+const graph = new DependencyGraph();
+graph.buildFromProject('./src');
+
+// Get all dependencies of a file
+const deps = graph.getDependencies('src/utils/helpers.js');
+
+// Get all files that depend on a file
+const dependents = graph.getDependents('src/utils/helpers.js');
+```
+
+##### 4. Cache Manager API
+
+Programmatic cache control:
+
+```javascript
+const { CacheManager } = require('@is_adou/dead-code-detector');
+
+const cache = new CacheManager({
+  maxSize: 1000,
+  ttl: 3600000 // 1 hour
+});
+
+// Manual cache operations
+cache.set('key', value);
+cache.get('key');
+cache.clear();
+```
+
+##### 5. Enhanced Reporter
+
+Multiple output formats:
+
+```bash
+# JSON output
+dead-code --output json
+
+# SARIF format (for GitHub Code Scanning)
+dead-code --output sarif
+
+# Custom output file
+dead-code --output json --output-file results.json
+```
+
+#### Breaking Changes
+
+None. Version 1.1.x is fully backward compatible with 1.0.x.
+
+#### Migration Steps
+
+1. **Update package**:
+   ```bash
+   npm install @is_adou/dead-code-detector@latest
+   ```
+
+2. **Optional: Enable new features**:
+   ```json
+   {
+     "incremental": true,
+     "cache": true
+   }
+   ```
+
+3. **Update CI scripts** (optional):
+   ```yaml
+   # GitHub Actions - use incremental for PR checks
+   - name: Check for dead code
+     run: npx dead-code --incremental --since origin/main
+   ```
+
+---
 
 ### From 0.x to 1.0.0
 
@@ -394,7 +511,9 @@ npm outdated @is_adou/dead-code-detector
   "srcDir": "./src",
   "extensions": [".ts", ".tsx"],
   "ignoreDirs": ["node_modules", "dist", "test"],
-  "mode": "ast"
+  "mode": "ast",
+  "incremental": true,
+  "cache": true
 }
 ```
 
@@ -404,7 +523,8 @@ npm outdated @is_adou/dead-code-detector
   "srcDir": "./src",
   "extensions": [".js", ".vue", ".ts"],
   "ignoreDirs": ["node_modules", "dist"],
-  "mode": "ast"
+  "mode": "ast",
+  "incremental": true
 }
 ```
 
@@ -414,7 +534,8 @@ npm outdated @is_adou/dead-code-detector
   "srcDir": "./src",
   "extensions": [".js", ".jsx", ".ts", ".tsx"],
   "ignoreDirs": ["node_modules", "build", "coverage"],
-  "mode": "ast"
+  "mode": "ast",
+  "incremental": true
 }
 ```
 
@@ -424,7 +545,8 @@ npm outdated @is_adou/dead-code-detector
   "srcDir": "./packages",
   "extensions": [".js", ".jsx", ".ts", ".tsx", ".vue"],
   "ignoreDirs": ["node_modules", "dist", "**/node_modules"],
-  "mode": "ast"
+  "mode": "ast",
+  "incremental": true
 }
 ```
 
@@ -463,6 +585,10 @@ Some differences:
 # After
 - name: Check dead code
   run: npx dead-code
+
+# For PR checks (incremental)
+- name: Check dead code (changed files)
+  run: npx dead-code --incremental --since origin/main
 ```
 
 ### Q: What if I find false positives?
@@ -472,6 +598,7 @@ Some differences:
 2. Verify path aliases are correctly resolved
 3. Add files to `ignoreDirs` if needed
 4. Use `--verbose` to understand detection logic
+5. Consider using `// @dead-code-ignore` comment
 
 ### Q: Can I gradually migrate?
 
@@ -480,6 +607,31 @@ Some differences:
 2. Compare results
 3. Gradually phase out the old tool
 
+### Q: How do I use the new incremental analysis?
+
+**A:** 
+```bash
+# In CI for PR checks
+dead-code --incremental --since origin/main
+
+# Local development (analyze uncommitted changes)
+dead-code --incremental
+
+# Analyze changes since last week
+dead-code --incremental --since "HEAD@{1 week ago}"
+```
+
+### Q: How do I clear the cache?
+
+**A:** 
+```bash
+# Clear cache via CLI
+dead-code --clear-cache
+
+# Or delete the cache directory
+rm -rf .dead-code-cache/
+```
+
 ---
 
 ## Need Help?
@@ -487,3 +639,4 @@ Some differences:
 - [GitHub Issues](https://github.com/Adou377/dead-code-detector/issues)
 - [Documentation](./README.md)
 - [API Reference](./API.md)
+- [中文文档](./README.zh-CN.md)

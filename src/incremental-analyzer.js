@@ -331,24 +331,150 @@ function resetDependencyGraph() {
 }
 
 /**
+ * 自动检测默认分支名称
+ * 检测顺序：origin/HEAD -> main -> master
+ * @param {string} srcDir - 源代码目录
+ * @returns {Object} 检测结果 { branch: string|null, detected: boolean, reason: string }
+ */
+function detectDefaultBranch(srcDir) {
+  // 尝试通过 origin/HEAD 获取默认分支
+  try {
+    const headRef = execSync('git symbolic-ref refs/remotes/origin/HEAD', {
+      cwd: srcDir,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+
+    // refs/remotes/origin/main -> main
+    const branch = headRef.replace(/^refs\/remotes\/origin\//, '');
+    return {
+      branch,
+      detected: true,
+      reason: `通过 origin/HEAD 自动检测到默认分支: ${branch}`,
+    };
+  } catch {
+    // 继续尝试其他方式
+  }
+
+  // 尝试检查 main 分支是否存在
+  const commonBranches = ['main', 'master'];
+  for (const branch of commonBranches) {
+    try {
+      // 检查本地或远程是否存在该分支
+      execSync(`git rev-parse --verify ${branch}`, {
+        cwd: srcDir,
+        stdio: 'pipe',
+      });
+      return {
+        branch,
+        detected: true,
+        reason: `检测到常见分支名称: ${branch}`,
+      };
+    } catch {
+      // 尝试检查远程分支
+      try {
+        execSync(`git rev-parse --verify origin/${branch}`, {
+          cwd: srcDir,
+          stdio: 'pipe',
+        });
+        return {
+          branch,
+          detected: true,
+          reason: `检测到远程分支: origin/${branch}`,
+        };
+      } catch {
+        // 继续尝试下一个
+      }
+    }
+  }
+
+  return {
+    branch: null,
+    detected: false,
+    reason: '无法自动检测默认分支，请使用 --base-branch 手动指定',
+  };
+}
+
+/**
+ * 检查分支是否存在
+ * @param {string} srcDir - 源代码目录
+ * @param {string} branch - 分支名称
+ * @returns {boolean} 分支是否存在
+ */
+function branchExists(srcDir, branch) {
+  try {
+    execSync(`git rev-parse --verify ${branch}`, {
+      cwd: srcDir,
+      stdio: 'pipe',
+    });
+    return true;
+  } catch {
+    try {
+      execSync(`git rev-parse --verify origin/${branch}`, {
+        cwd: srcDir,
+        stdio: 'pipe',
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+/**
  * 获取 Git 变更的文件列表
  * @param {string} srcDir - 源代码目录
- * @param {string} baseBranch - 基准分支（默认 main）
- * @returns {string[]|null} 变更的文件列表，失败返回 null
+ * @param {string} baseBranch - 基准分支（可选，不提供则自动检测）
+ * @returns {Object} 结果对象 { files: string[]|null, branch: string, autoDetected: boolean, fallback: boolean, reason: string }
  */
-function getChangedFiles(srcDir, baseBranch = 'main') {
+function getChangedFiles(srcDir, baseBranch = null) {
+  // 检查是否在 Git 仓库中
   try {
     execSync('git rev-parse --is-inside-work-tree', { cwd: srcDir, stdio: 'pipe' });
   } catch {
-    defaultLogger.warn('当前目录不是 Git 仓库，将使用全量分析模式', 'E006', {
-      目录: srcDir,
-    });
-    return null;
+    return {
+      files: null,
+      branch: null,
+      autoDetected: false,
+      fallback: true,
+      reason: '当前目录不是 Git 仓库',
+    };
+  }
+
+  let targetBranch = baseBranch;
+  let autoDetected = false;
+
+  // 如果没有指定基准分支，尝试自动检测
+  if (!targetBranch) {
+    const detection = detectDefaultBranch(srcDir);
+    if (detection.detected) {
+      targetBranch = detection.branch;
+      autoDetected = true;
+    } else {
+      return {
+        files: null,
+        branch: null,
+        autoDetected: false,
+        fallback: true,
+        reason: detection.reason,
+      };
+    }
+  }
+
+  // 验证分支是否存在
+  if (!branchExists(srcDir, targetBranch)) {
+    return {
+      files: null,
+      branch: targetBranch,
+      autoDetected,
+      fallback: true,
+      reason: `分支 "${targetBranch}" 不存在`,
+    };
   }
 
   try {
     const changedFiles = execSync(
-      `git diff --name-only --diff-filter=ACMR ${baseBranch}...HEAD`,
+      `git diff --name-only --diff-filter=ACMR ${targetBranch}...HEAD`,
       { cwd: srcDir, encoding: 'utf-8' }
     )
       .trim()
@@ -356,19 +482,31 @@ function getChangedFiles(srcDir, baseBranch = 'main') {
       .filter(file => file.length > 0);
 
     const srcPath = path.basename(srcDir);
-    return changedFiles.filter(file => {
+    const filteredFiles = changedFiles.filter(file => {
       const ext = path.extname(file);
       return (
         SOURCE_EXTENSIONS.has(ext) &&
         (file.startsWith(srcPath + '/') || file.startsWith(srcPath + '\\'))
       );
     });
+
+    return {
+      files: filteredFiles,
+      branch: targetBranch,
+      autoDetected,
+      fallback: false,
+      reason: autoDetected
+        ? `自动检测到基准分支: ${targetBranch}`
+        : `使用指定基准分支: ${targetBranch}`,
+    };
   } catch (error) {
-    defaultLogger.warn('获取 Git 变更失败，将使用全量分析模式', 'E006', {
-      目录: srcDir,
-      错误信息: error.message,
-    });
-    return null;
+    return {
+      files: null,
+      branch: targetBranch,
+      autoDetected,
+      fallback: true,
+      reason: `获取 Git 变更失败: ${error.message}`,
+    };
   }
 }
 
@@ -709,6 +847,8 @@ module.exports = {
   isIncrementalSupported,
   getCurrentBranch,
   getLastCommitHash,
+  detectDefaultBranch,
+  branchExists,
   createIncrementalCache,
   analyzeFileWithCache,
   analyzeFilesWithCache,

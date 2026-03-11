@@ -32,24 +32,26 @@ describe('incremental-analyzer', () => {
   describe('getChangedFiles', () => {
     test('应在 Git 仓库中返回变更的源代码文件', () => {
       const callCount = { count: 0 };
-      execSyncMock.mockImplementation(() => {
+      execSyncMock.mockImplementation((cmd) => {
         callCount.count++;
-        if (callCount.count === 1) return Buffer.from('true');
-        // 第二次调用使用 encoding: 'utf-8'，返回字符串
+        if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
+        if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return 'src/utils.js\nsrc/components/Button.jsx\nsrc/styles.css\nREADME.md\n';
       });
 
       const result = getChangedFiles('/project/src', 'main');
 
-      expect(result).toEqual(['src/utils.js', 'src/components/Button.jsx']);
-      expect(execSyncMock).toHaveBeenCalledTimes(2);
+      expect(result.files).toEqual(['src/utils.js', 'src/components/Button.jsx']);
+      expect(result.fallback).toBe(false);
+      expect(result.branch).toBe('main');
     });
 
     test('应使用自定义基准分支', () => {
       const callCount = { count: 0 };
-      execSyncMock.mockImplementation(() => {
+      execSyncMock.mockImplementation((cmd) => {
         callCount.count++;
-        if (callCount.count === 1) return Buffer.from('true');
+        if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
+        if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return 'src/index.js\n';
       });
 
@@ -61,108 +63,147 @@ describe('incremental-analyzer', () => {
       );
     });
 
-    test('应默认使用 main 分支', () => {
+    test('应自动检测 main 分支', () => {
       const callCount = { count: 0 };
-      execSyncMock.mockImplementation(() => {
+      execSyncMock.mockImplementation((cmd) => {
         callCount.count++;
-        if (callCount.count === 1) return Buffer.from('true');
+        if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
+        if (cmd.includes('symbolic-ref refs/remotes/origin/HEAD')) {
+          return 'refs/remotes/origin/main';
+        }
         return '';
       });
 
-      getChangedFiles('/project/src');
+      const result = getChangedFiles('/project/src');
 
-      expect(execSyncMock).toHaveBeenCalledWith(
-        'git diff --name-only --diff-filter=ACMR main...HEAD',
-        expect.objectContaining({ cwd: '/project/src' })
-      );
+      expect(result.branch).toBe('main');
+      expect(result.autoDetected).toBe(true);
     });
 
-    test('非 Git 仓库应返回 null', () => {
+    test('应自动检测 master 分支（当 main 不存在时）', () => {
+      execSyncMock.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
+        if (cmd.includes('symbolic-ref refs/remotes/origin/HEAD')) {
+          throw new Error('not found');
+        }
+        if (cmd.includes('rev-parse --verify main')) {
+          throw new Error('not found');
+        }
+        if (cmd.includes('rev-parse --verify origin/main')) {
+          throw new Error('not found');
+        }
+        if (cmd.includes('rev-parse --verify master')) {
+          return Buffer.from('abc123');
+        }
+        return '';
+      });
+
+      const result = getChangedFiles('/project/src');
+
+      expect(result.branch).toBe('master');
+      expect(result.autoDetected).toBe(true);
+    });
+
+    test('非 Git 仓库应返回 fallback 结果', () => {
       execSyncMock.mockImplementation(() => {
         throw new Error('not a git repository');
       });
 
       const result = getChangedFiles('/project/src', 'main');
 
-      expect(result).toBeNull();
+      expect(result.files).toBeNull();
+      expect(result.fallback).toBe(true);
     });
 
-    test('git diff 失败应返回 null', () => {
-      const callCount = { count: 0 };
-      execSyncMock.mockImplementation(() => {
-        callCount.count++;
-        if (callCount.count === 1) return Buffer.from('true');
-        throw new Error('git diff failed');
+    test('分支不存在应返回 fallback 结果', () => {
+      execSyncMock.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
+        if (cmd.includes('rev-parse --verify')) {
+          throw new Error('not found');
+        }
+        return '';
       });
 
-      const result = getChangedFiles('/project/src', 'main');
+      const result = getChangedFiles('/project/src', 'nonexistent');
 
-      expect(result).toBeNull();
+      expect(result.files).toBeNull();
+      expect(result.fallback).toBe(true);
+      expect(result.reason).toContain('不存在');
+    });
+
+    test('无法自动检测分支时应返回 fallback 结果', () => {
+      execSyncMock.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
+        if (cmd.includes('symbolic-ref')) throw new Error('not found');
+        if (cmd.includes('rev-parse --verify')) throw new Error('not found');
+        return '';
+      });
+
+      const result = getChangedFiles('/project/src');
+
+      expect(result.files).toBeNull();
+      expect(result.fallback).toBe(true);
+      expect(result.reason).toContain('手动指定');
     });
 
     test('应过滤非源代码文件', () => {
-      const callCount = { count: 0 };
-      execSyncMock.mockImplementation(() => {
-        callCount.count++;
-        if (callCount.count === 1) return Buffer.from('true');
+      execSyncMock.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
+        if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return 'src/index.js\nsrc/style.css\nsrc/data.json\nsrc/image.png\n';
       });
 
       const result = getChangedFiles('/project/src', 'main');
 
-      expect(result).toEqual(['src/index.js']);
+      expect(result.files).toEqual(['src/index.js']);
     });
 
     test('应处理空变更列表', () => {
-      const callCount = { count: 0 };
-      execSyncMock.mockImplementation(() => {
-        callCount.count++;
-        if (callCount.count === 1) return Buffer.from('true');
+      execSyncMock.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
+        if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return '';
       });
 
       const result = getChangedFiles('/project/src', 'main');
 
-      expect(result).toEqual([]);
+      expect(result.files).toEqual([]);
     });
 
     test('应处理 Windows 路径分隔符', () => {
-      const callCount = { count: 0 };
-      execSyncMock.mockImplementation(() => {
-        callCount.count++;
-        if (callCount.count === 1) return Buffer.from('true');
+      execSyncMock.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
+        if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return 'src\\utils.js\nsrc\\components\\Button.jsx\n';
       });
 
       const result = getChangedFiles('/project/src', 'main');
 
-      expect(result).toEqual(['src\\utils.js', 'src\\components\\Button.jsx']);
+      expect(result.files).toEqual(['src\\utils.js', 'src\\components\\Button.jsx']);
     });
 
     test('应支持 TypeScript 文件', () => {
-      const callCount = { count: 0 };
-      execSyncMock.mockImplementation(() => {
-        callCount.count++;
-        if (callCount.count === 1) return Buffer.from('true');
+      execSyncMock.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
+        if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return 'src/types.ts\nsrc/component.tsx\n';
       });
 
       const result = getChangedFiles('/project/src', 'main');
 
-      expect(result).toEqual(['src/types.ts', 'src/component.tsx']);
+      expect(result.files).toEqual(['src/types.ts', 'src/component.tsx']);
     });
 
     test('应支持 Vue 文件', () => {
-      const callCount = { count: 0 };
-      execSyncMock.mockImplementation(() => {
-        callCount.count++;
-        if (callCount.count === 1) return Buffer.from('true');
+      execSyncMock.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
+        if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return 'src/App.vue\n';
       });
 
       const result = getChangedFiles('/project/src', 'main');
 
-      expect(result).toEqual(['src/App.vue']);
+      expect(result.files).toEqual(['src/App.vue']);
     });
   });
 
@@ -574,16 +615,15 @@ describe('incremental-analyzer', () => {
 
   describe('边界条件测试', () => {
     test('getChangedFiles 应处理多行输出中的空行', () => {
-      const callCount = { count: 0 };
-      execSyncMock.mockImplementation(() => {
-        callCount.count++;
-        if (callCount.count === 1) return Buffer.from('true');
+      execSyncMock.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
+        if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return '\nsrc/a.js\n\nsrc/b.js\n\n';
       });
 
       const result = getChangedFiles('/project/src', 'main');
 
-      expect(result).toEqual(['src/a.js', 'src/b.js']);
+      expect(result.files).toEqual(['src/a.js', 'src/b.js']);
     });
 
     test('analyzeAffectedFiles 应处理循环依赖', () => {
@@ -676,17 +716,16 @@ describe('IncrementalAnalyzer 类测试', () => {
   
   describe('getChangedFiles 方法', () => {
     test('应调用全局函数', () => {
-      const callCount = { count: 0 };
-      execSyncMock.mockImplementation(() => {
-        callCount.count++;
-        if (callCount.count === 1) return Buffer.from('true');
+      execSyncMock.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --is-inside-work-tree')) return Buffer.from('true');
+        if (cmd.includes('rev-parse --verify')) return Buffer.from('abc123');
         return 'src/a.js\n';
       });
       
       const analyzer = new IncrementalAnalyzer({ srcDir: '/project/src' });
       const result = analyzer.getChangedFiles();
       
-      expect(result).toEqual(['src/a.js']);
+      expect(result.files).toEqual(['src/a.js']);
     });
   });
   

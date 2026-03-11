@@ -519,7 +519,13 @@ describe('index.js - 主入口模块', () => {
       mergeConfig.mockReturnValue(mockConfig);
       DeadCodeFinderAST.mockImplementation(() => mockFinder);
       incrementalAnalyzer.isIncrementalSupported.mockReturnValue(true);
-      incrementalAnalyzer.getChangedFiles.mockReturnValue(['src/changed.js', 'src/changed-utils.js']);
+      incrementalAnalyzer.getChangedFiles.mockReturnValue({
+        files: ['src/changed.js', 'src/changed-utils.js'],
+        branch: 'main',
+        autoDetected: true,
+        fallback: false,
+        reason: '自动检测到基准分支: main',
+      });
       incrementalAnalyzer.filterUnusedExports.mockImplementation(exports => exports.filter(e => e.file.includes('changed')));
       incrementalAnalyzer.filterUnusedComponents.mockImplementation(comps => comps.filter(c => c.file.includes('changed')));
       incrementalAnalyzer.filterUnusedToolFiles.mockImplementation(files => files.filter(f => f.includes('changed')));
@@ -567,7 +573,13 @@ describe('index.js - 主入口模块', () => {
       mergeConfig.mockReturnValue(mockConfig);
       DeadCodeFinderAST.mockImplementation(() => mockFinder);
       incrementalAnalyzer.isIncrementalSupported.mockReturnValue(true);
-      incrementalAnalyzer.getChangedFiles.mockReturnValue([]);
+      incrementalAnalyzer.getChangedFiles.mockReturnValue({
+        files: [],
+        branch: 'main',
+        autoDetected: true,
+        fallback: false,
+        reason: '自动检测到基准分支: main',
+      });
       incrementalAnalyzer.getCurrentBranch.mockReturnValue('main');
       incrementalAnalyzer.getLastCommitHash.mockReturnValue('def456');
 

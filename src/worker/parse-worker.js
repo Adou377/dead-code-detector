@@ -98,6 +98,7 @@ function parseVueFile(filePath, content, srcDir, result) {
   result.vueInfo = {
     isComponent: vueInfo.isComponent,
     hasScriptSetup: vueInfo.hasScriptSetup,
+    isPureTemplateComponent: vueInfo.isPureTemplateComponent,
     composables: vueInfo.composables,
     exposed: vueInfo.exposed,
   };

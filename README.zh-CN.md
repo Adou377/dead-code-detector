@@ -1,5 +1,8 @@
 # 死代码检测工具 (Dead Code Detector)
 
+![npm version](https://img.shields.io/npm/v/@is_adou/dead-code-detector)
+![license](https://img.shields.io/npm/l/@is_adou/dead-code-detector)
+
 一个高效的死代码检测工具，专为 Vue 2/3 和 React 项目设计，帮助识别和清理未使用的代码、导出和组件。节省时间并通过消除不再需要的代码来减少包大小。
 
 ## ✨ 主要特性
@@ -19,159 +22,109 @@
 ## 🚀 快速开始
 
 ```bash
-# 1. 全局安装
+# 全局安装（推荐）
 npm install -g @is_adou/dead-code-detector
 
-# 2. 在项目中运行检测
+# 在项目中运行检测
 cd your-project
 dead-code
 
-# 3. 查看结果并选择是否修复
+# 自动修复未使用的代码
 dead-code --fix
 ```
 
-## 📦 安装
+<details>
+<summary>其他安装方式</summary>
 
 ```bash
-# 全局安装（推荐频繁使用）
-npm install -g @is_adou/dead-code-detector
-
-# 本地安装（项目特定使用）
+# 本地安装
 npm install @is_adou/dead-code-detector --save-dev
-```
 
-## 🛠️ 使用方式
-
-### 命令行使用
-
-#### 根据安装方式选择运行方法
-
-```bash
-# 全局安装后，直接运行
-dead-code
-
-# 本地安装后，使用 npx 运行
+# 使用 npx 运行
 npx dead-code
 
-# 本地安装后，也可以在 package.json 的 scripts 中配置
-# package.json:
+# 或添加到 package.json scripts
 # {
 #   "scripts": {
 #     "dead-code": "dead-code"
 #   }
 # }
-# 然后运行:
 npm run dead-code
 ```
 
-#### 基础检测
+</details>
+
+## 🛠️ 使用方式
+
+### 命令行
+
 ```bash
-# 检测当前目录 src 文件夹
+# 基础检测
 dead-code
 
 # 指定目录和模式
 dead-code --src ./src --mode ast
-```
 
-#### 自动修复模式
-```bash
-# 自动修复未使用的代码
-dead-code --fix
-
-# 预览修复而不进行更改
+# 预览修复
 dead-code --fix --dry-run
 
-# 带确认提示的自动修复
+# 带确认的自动修复
 dead-code --fix --confirm
 ```
 
 ### 配置
 
-#### 配置文件
-
-工具支持多种配置文件格式（优先级从高到低）：
-
-- `.deadcoderc.json`（推荐）
-- `.deadcoderc.js`（用于动态配置）
-- `deadcode.config.js`（替代名称）
-
-#### 配置选项
+在项目根目录创建 `.deadcoderc.json`：
 
 ```json
 {
-  "srcDir": "./src",           // 要扫描的源目录
-  "extensions": [".js", ".vue", ".jsx", ".ts", ".tsx"],  // 要包含的文件扩展名
-  "ignoreDirs": ["node_modules", "dist", ".git"],  // 要忽略的目录
-  "mode": "ast",               // 检测模式: "ast"（精确）或 "regex"（快速）
-  "fix": false,                // 启用自动修复模式
-  "verbose": false,            // 启用详细输出
-  "maxFileSize": 1000000,      // 最大文件大小（字节），超过此大小的文件将被跳过（默认: 1MB）
-  "concurrency": 50,           // 最大并发数（默认: 50）
-  "cache": true,               // 启用持久化缓存（默认: true）
-  "cacheDir": ".dead-code-cache",  // 缓存目录（默认: .dead-code-cache）
-  "cacheMaxAge": 604800000,    // 缓存最大有效期，单位毫秒（默认: 7 天）
-  "maxEntries": 100,           // 最大缓存条目数（默认: 100）
-  "maxMemoryMB": 50            // 缓存最大内存使用量，单位 MB（默认: 50MB）
+  "srcDir": "./src",
+  "extensions": [".js", ".vue", ".jsx", ".ts", ".tsx"],
+  "ignoreDirs": ["node_modules", "dist", ".git"],
+  "mode": "ast",
+  "cache": true,
+  "cacheDir": ".dead-code-cache"
 }
 ```
 
-### API 使用
+<details>
+<summary>完整配置选项</summary>
 
-#### 基础 API
+| 选项 | 说明 | 默认值 |
+|------|------|--------|
+| `srcDir` | 要扫描的源目录 | `./src` |
+| `extensions` | 要包含的文件扩展名 | `[".js", ".vue", ".jsx", ".ts", ".tsx"]` |
+| `ignoreDirs` | 要忽略的目录 | `["node_modules", "dist", ".git"]` |
+| `mode` | 检测模式: "ast" 或 "regex" | `"ast"` |
+| `fix` | 启用自动修复模式 | `false` |
+| `verbose` | 启用详细输出 | `false` |
+| `maxFileSize` | 最大文件大小（字节） | `1000000` (1MB) |
+| `concurrency` | 最大并发数 | `50` |
+| `cache` | 启用持久化缓存 | `true` |
+| `cacheDir` | 缓存目录 | `.dead-code-cache` |
+| `cacheMaxAge` | 缓存最大有效期（毫秒） | `604800000` (7天) |
+| `maxEntries` | 最大缓存条目数 | `100` |
+| `maxMemoryMB` | 缓存最大内存使用量 | `50` |
 
-```javascript
-const { detect } = require('@is_adou/dead-code-detector');
+</details>
 
-async function main() {
-  // 运行检测
-  const result = await detect({
-    srcDir: './src',        // 源目录
-    mode: 'ast',            // 检测模式
-    config: './.deadcoderc.json',  // 可选配置文件
-  });
+### 增量分析
 
-  // 访问结果
-  console.log('未使用的导出:', result.results.unusedExports);
-  console.log('未使用的组件:', result.results.unusedComponents);
-  console.log('未使用的工具文件:', result.results.unusedToolFiles);
+仅分析变更的文件，加速重复运行：
 
-  // 自动修复
-  const fixResult = await result.finder.fix({
-    dryRun: false,   // 设置为 true 预览更改
-    confirm: true,   // 设置为 true 进行确认提示
-  });
+```bash
+# 增量分析（自动检测 main/master 分支）
+dead-code --incremental
 
-  console.log('修复结果:', fixResult);
-}
-
-main();
+# 指定基准分支
+dead-code --incremental --base-branch develop
 ```
 
-#### 高级 API
-
-```javascript
-const { DeadCodeFinderAST, DeadCodeFinderRegex } = require('@is_adou/dead-code-detector');
-
-async function main() {
-  // 创建查找器实例
-  const finder = new DeadCodeFinderAST({
-    srcDir: './src',
-    extensions: ['.js', '.vue', '.tsx'],
-    ignoreDirs: ['node_modules', 'dist'],
-  });
-
-  // 运行分析
-  const results = await finder.analyze();
-  
-  // 获取结果
-  console.log('结果:', results);
-
-  // 修复未使用的代码
-  await finder.fix({ dryRun: false });
-}
-
-main();
-```
+| 场景 | 命令 |
+|------|------|
+| 日常开发 | `dead-code --incremental` |
+| PR 代码审查 | `dead-code --incremental --base-branch main` |
+| 完整代码审计 | `dead-code` |
 
 ## 🔍 检测模式
 
@@ -181,125 +134,57 @@ main();
 - 使用 Babel AST 解析进行高精度检测
 - 支持多行导出、TypeScript 类型和 Vue `<script setup>`
 - 更好地处理复杂的导出/导入模式
-- 更可靠的组件检测
 
-### 正则模式（兼容）
+### 正则模式
 
 **用于旧项目或性能关键场景**
 - 使用传统正则表达式进行更快的扫描
 - 准确性较低但适用于旧代码库
-- 仅当 AST 模式存在性能问题时推荐使用
 - 对复杂语法特性的支持有限
 
 ## 🛠️ 自动修复
 
-工具可以使用 `--fix` 参数自动删除未使用的代码。以下是其工作原理：
-
-### 自动修复特性
-
-- **智能导出移除**: 移除未使用的导出，同时保留使用的导出
-- **多行导出处理**: 正确处理复杂的多行导出语句
-- **组件清理**: 移除未使用的 Vue 和 React 组件
-- **文件删除**: 移除完全未使用的工具文件
-- **备份系统**: 在进行更改前自动创建备份
-- **错误恢复**: 优雅处理语法错误
-
-### 安全措施
-
-1. **始终先不带 `--fix` 运行**以预览更改
-2. **使用 `--dry-run`** 查看将被删除的内容
-3. **使用 `--confirm`** 进行交互式确认
-4. **检查备份**在 `backup/` 目录中（如果需要）
-
-### 示例工作流程
-
 ```bash
-# 1. 预览将修复的内容
+# 预览修复内容
 dead-code --fix --dry-run
 
-# 2. 带确认运行
+# 带确认的修复
 dead-code --fix --confirm
 
-# 3. 不带确认运行（谨慎使用!）
+# 直接修复（谨慎使用！）
 dead-code --fix
 ```
 
-
+**安全措施：**
+1. 始终先不带 `--fix` 运行以预览
+2. 使用 `--dry-run` 查看将被删除的内容
+3. 使用 `--confirm` 进行交互式确认
+4. 如需恢复，检查 `backup/` 目录
 
 ## 📚 高级用法
 
-### 命令行选项
-
-#### 按扩展名过滤
 ```bash
-# 仅扫描 JavaScript 和 TypeScript 文件
+# 按扩展名过滤
 dead-code --ext .js,.ts,.tsx
 
-# 仅扫描 Vue 文件
-dead-code --ext .vue
-```
-
-#### 忽略目录
-```bash
-# 忽略多个目录
+# 忽略目录
 dead-code --ignore node_modules,dist,.git,coverage
-```
 
-#### 详细输出
-```bash
-# 显示详细进度和分析
+# 详细输出
 dead-code --verbose
-```
 
-#### 自定义源目录
-```bash
-# 指定自定义源目录
+# 自定义源目录
 dead-code --src ./src/components
-```
 
-#### 组合多个选项
-```bash
-# 完整功能命令
+# 组合选项
 dead-code --src ./src --mode ast --ext .js,.vue,.tsx --ignore node_modules,dist --verbose
 ```
 
 ## 📝 配置示例
 
-### 基础配置
+<details>
+<summary>Vue 3 项目</summary>
 
-**文件: `.deadcoderc.json`**
-```json
-{
-  "srcDir": "./src",
-  "mode": "ast"
-}
-```
-
-### 完整配置
-
-**文件: `.deadcoderc.json`**
-```json
-{
-  "srcDir": "./src",
-  "extensions": [".js", ".vue", ".jsx", ".ts", ".tsx"],
-  "ignoreDirs": ["node_modules", "dist", ".git", "coverage", ".history"],
-  "mode": "ast",
-  "fix": false,
-  "verbose": false,
-  "maxFileSize": 1000000,
-  "concurrency": 50,
-  "cache": true,
-  "cacheDir": ".dead-code-cache",
-  "cacheMaxAge": 604800000,
-  "maxEntries": 100,
-  "maxMemoryMB": 50
-}
-```
-
-### 框架特定配置
-
-#### Vue 3 项目
-**文件: `.deadcoderc.json`**
 ```json
 {
   "srcDir": "./src",
@@ -309,8 +194,11 @@ dead-code --src ./src --mode ast --ext .js,.vue,.tsx --ignore node_modules,dist 
 }
 ```
 
-#### React + TypeScript 项目
-**文件: `.deadcoderc.json`**
+</details>
+
+<details>
+<summary>React + TypeScript 项目</summary>
+
 ```json
 {
   "srcDir": "./src",
@@ -320,8 +208,11 @@ dead-code --src ./src --mode ast --ext .js,.vue,.tsx --ignore node_modules,dist 
 }
 ```
 
-#### 旧项目（正则模式）
-**文件: `.deadcoderc.json`**
+</details>
+
+<details>
+<summary>旧项目（正则模式）</summary>
+
 ```json
 {
   "srcDir": "./src",
@@ -331,88 +222,63 @@ dead-code --src ./src --mode ast --ext .js,.vue,.tsx --ignore node_modules,dist 
 }
 ```
 
+</details>
+
 ## 🛠️ 故障排查
 
 ### 常见问题
 
-#### Q: 为什么某些导出没有被检测到？
+**Q: 为什么某些导出没有被检测到？**
 
-**可能的原因：**
-- 导出被动态导入使用
-- 导出被作为副作用导入
-- 导出在测试文件中使用
-- 路径别名解析失败
-- 导出以 AST 无法检测的方式使用（例如基于字符串的导入）
+可能原因：动态导入、副作用导入、测试文件中使用、路径别名解析失败。
 
-#### Q: 为什么组件被标记为未使用？
+**Q: 为什么组件被标记为未使用？**
 
-**可能的原因：**
-- 组件确实未被使用
-- 组件使用了不同的命名约定（PascalCase vs kebab-case）
-- 组件在模板中使用但未在脚本中正确导入
-- 组件全局注册但未本地导入
+可能原因：命名约定不同（PascalCase vs kebab-case）、模板中使用但脚本未导入、全局注册。
 
-#### Q: 自动修复误删了代码怎么办？
+**Q: 自动修复误删了代码怎么办？**
 
-**解决方案：** 工具会自动在 `backup/` 目录创建备份，可以从中恢复文件。
+从 `backup/` 目录恢复。工具会在修改前自动创建备份。
 
-#### Q: 大项目检测速度慢？
+**Q: 大项目检测速度慢？**
 
-**优化方法：**
-1. 使用 AST 模式（默认）- 对于大项目实际上更快
-2. 使用 `--ignore` 将大目录添加到忽略列表
-3. 使用 `--ext` 限制文件扩展名
-4. 对于非常大的项目使用正则模式（权衡：准确性较低）
-
-#### Q: 如何处理路径别名？
-
-**解决方案：** 工具会自动从项目配置（webpack、vite 等）中检测路径别名。如果不起作用，可以在配置文件中手动指定别名。
+1. 使用 AST 模式（默认）- 对大项目更快
+2. 用 `--ignore` 添加大目录到忽略列表
+3. 用 `--ext` 限制文件扩展名
 
 ### 错误信息
 
-#### "无法解析文件"
-
-这意味着文件存在语法错误。工具会跳过这些文件并继续分析。
-
-#### "路径别名未解析"
-
-检查项目配置中的路径别名，或在配置文件中手动指定。
-
-#### "未找到文件"
-
-确保使用 `--src` 指定了正确的源目录。
+| 错误 | 解决方案 |
+|------|----------|
+| "无法解析文件" | 文件有语法错误，将被跳过 |
+| "路径别名未解析" | 检查项目配置或手动指定 |
+| "未找到文件" | 用 `--src` 检查源目录 |
 
 ## 📖 API 文档
 
-详细的 API 文档请查看 [API.md](./API.md) 文件。它包括：
-- 完整的 API 参考
-- 详细的方法描述
-- 类型定义
-- 高级使用示例
+详细 API 文档请查看 [API.md](./API.md)。
+
+```javascript
+const { detect } = require('@is_adou/dead-code-detector');
+
+const result = await detect({ srcDir: './src' });
+console.log('未使用的导出:', result.results.unusedExports);
+```
 
 ## 🔄 迁移指南
 
-从其他死代码检测工具迁移？请查看我们的 [迁移指南](./MIGRATION.md)，包括：
-- 从 ts-prune、unused、webpack-deadcode-plugin 等工具迁移
+从其他工具迁移？请查看 [MIGRATION.md](./MIGRATION.md)，包括：
+- 从 ts-prune、unused、webpack-deadcode-plugin 迁移
 - 版本升级说明
 - 配置迁移示例
-- 常见迁移问题解答
 
 ## 🤝 贡献
 
-我们欢迎为改进项目做出贡献！请阅读我们的 [贡献指南](./CONTRIBUTING.md) 以开始。贡献包括：
-- 代码改进和 bug 修复
-- 文档增强
-- 测试覆盖率改进
-- 新功能建议
+请查看 [CONTRIBUTING.md](./CONTRIBUTING.md) 了解贡献指南。
 
 ## 📄 变更日志
 
-请查看 [CHANGELOG.md](./CHANGELOG.md) 文件了解全面的变更和更新，包括：
-- 版本历史
-- 新功能
-- bug 修复
-- 重大变更
+请查看 [CHANGELOG.md](./CHANGELOG.md) 了解版本历史。
 
 ## 🌍 语言
 
@@ -421,13 +287,12 @@ dead-code --src ./src --mode ast --ext .js,.vue,.tsx --ignore node_modules,dist 
 
 ## 📝 许可证
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](https://opensource.org/licenses/MIT) 文件。
+MIT 许可证 - 详见 [LICENSE](https://opensource.org/licenses/MIT)。
 
 ## 🙏 致谢
 
 - 使用 Babel 进行 AST 解析
 - 受各种死代码检测工具的启发
-- 感谢所有贡献者和用户
 
 ---
 

@@ -205,6 +205,7 @@ function parseVueComponent(content) {
   if (!scriptMatch) {
     if (result.hasTemplate) {
       result.isPureTemplateComponent = true;
+      // 纯模板组件是合法的 Vue 组件，但没有可追踪的导出，不需要作为组件追踪
     }
     return result;
   }
