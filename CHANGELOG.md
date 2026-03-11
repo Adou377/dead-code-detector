@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-03-11
+
+### Added
+
+- **智能增量分析** - 增量分析体验优化
+  - 自动检测默认分支（支持 `main` 和 `master`）
+  - 非标准分支名称时自动回退到全量分析，避免报错
+  - 新增 `detectDefaultBranch()` 函数用于自动检测 Git 默认分支
+  - 新增 `branchExists()` 函数验证分支存在性
+
+### Changed
+
+- **增量分析 API 重构** - 返回值结构优化
+  - `getChangedFiles()` 返回值从数组改为对象格式，包含更丰富的元数据
+  - 新增返回字段：
+    - `files`: 变更文件列表
+    - `branch`: 实际使用的基准分支
+    - `autoDetected`: 是否自动检测分支
+    - `fallback`: 是否回退到全量分析
+    - `reason`: 回退原因（如适用）
+  - 支持不指定 `--since` 参数时自动检测基准分支
+
+### Fixed
+
+- **Worker 线程池资源泄漏** - 进程挂起问题修复
+  - 修复任务完成时超时定时器未清除，导致进程无法正常退出的问题
+  - 修复 Worker 错误/退出时未正确终止，导致进程挂起的问题
+  - 影响：使用 `--incremental` 或大项目分析时可能出现
+
+- **纯模板 Vue 组件解析** - 解析字段缺失修复
+  - 修复 `parse-worker.js` 中 `vueInfo` 缺少 `isPureTemplateComponent` 字段的问题
+  - 正确区分纯模板组件（无 `<script>` 块）和有脚本组件的处理逻辑
+
+### Documentation
+
+- 更新 README.md 和 README.zh-CN.md，添加增量分析功能说明
+- 优化 API.md 文档，补充新增 API 说明
+- 更新 MIGRATION.md，添加 1.0.x → 1.1.x 升级指南
+
+### Upgrade Notes
+
+从 1.1.0 升级到 1.1.1 无破坏性变更，直接更新即可
+
 ## [1.1.0] - 2026-03-11
 
 ### Performance

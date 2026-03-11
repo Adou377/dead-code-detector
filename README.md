@@ -1,5 +1,8 @@
 # Dead Code Detector
 
+![npm version](https://img.shields.io/npm/v/@is_adou/dead-code-detector)
+![license](https://img.shields.io/npm/l/@is_adou/dead-code-detector)
+
 An efficient dead code detection tool designed for Vue 2/3 and React projects, helping identify and clean up unused code, exports, and components. Save time and reduce bundle size by eliminating code that's no longer needed.
 
 ## ✨ Key Features
@@ -19,181 +22,109 @@ An efficient dead code detection tool designed for Vue 2/3 and React projects, h
 ## 🚀 Quick Start
 
 ```bash
-# 1. Install globally
+# Install globally (recommended)
 npm install -g @is_adou/dead-code-detector
 
-# 2. Run detection in your project
+# Run detection in your project
 cd your-project
 dead-code
 
-# 3. View results and optionally fix
+# Auto-fix unused code
 dead-code --fix
 ```
 
-## 📦 Installation
+<details>
+<summary>Other installation methods</summary>
 
 ```bash
-# Global installation (recommended for frequent use)
-npm install -g @is_adou/dead-code-detector
-
-# Local installation (for project-specific usage)
+# Local installation
 npm install @is_adou/dead-code-detector --save-dev
-```
 
-## 🛠️ Usage
-
-### Command Line Usage
-
-#### Running Based on Installation Method
-
-```bash
-# After global installation, run directly
-dead-code
-
-# After local installation, use npx
+# Run with npx
 npx dead-code
 
-# After local installation, you can also configure in package.json scripts
-# package.json:
+# Or add to package.json scripts
 # {
 #   "scripts": {
 #     "dead-code": "dead-code"
 #   }
 # }
-# Then run:
 npm run dead-code
 ```
 
-#### Basic Detection
+</details>
+
+## 🛠️ Usage
+
+### Command Line
+
 ```bash
-# Detect in current directory src folder
+# Basic detection
 dead-code
 
 # Specify directory and mode
 dead-code --src ./src --mode ast
-```
 
-#### Auto-fix Mode
-```bash
-# Auto-fix unused code
-dead-code --fix
-
-# Preview fix without making changes
+# Auto-fix with preview
 dead-code --fix --dry-run
 
-# Auto-fix with confirmation prompt
+# Auto-fix with confirmation
 dead-code --fix --confirm
 ```
 
 ### Configuration
 
-#### Config Files
-
-The tool supports multiple configuration file formats (in priority order):
-
-- `.deadcoderc.json` (recommended)
-- `.deadcoderc.js` (for dynamic configuration)
-- `deadcode.config.js` (alternative name)
-
-#### Configuration Options
+Create `.deadcoderc.json` in your project root:
 
 ```json
 {
-  "srcDir": "./src",           // Source directory to scan
-  "extensions": [".js", ".vue", ".jsx", ".ts", ".tsx"],  // File extensions to include
-  "ignoreDirs": ["node_modules", "dist", ".git"],  // Directories to ignore
-  "mode": "ast",               // Detection mode: "ast" (accurate) or "regex" (fast)
-  "fix": false,                // Enable auto-fix mode
-  "verbose": false,            // Enable detailed output
-  "maxFileSize": 1000000,      // Max file size in bytes, files larger than this will be skipped (default: 1MB)
-  "concurrency": 50,           // Maximum concurrency (default: 50)
-  "cache": true,               // Enable persistent cache (default: true)
-  "cacheDir": ".dead-code-cache",  // Cache directory (default: .dead-code-cache)
-  "cacheMaxAge": 604800000,    // Cache max age in ms (default: 7 days)
-  "maxEntries": 100,           // Maximum cache entries (default: 100)
-  "maxMemoryMB": 50            // Maximum memory for cache in MB (default: 50MB)
+  "srcDir": "./src",
+  "extensions": [".js", ".vue", ".jsx", ".ts", ".tsx"],
+  "ignoreDirs": ["node_modules", "dist", ".git"],
+  "mode": "ast",
+  "cache": true,
+  "cacheDir": ".dead-code-cache"
 }
 ```
 
-### Cache System
+<details>
+<summary>Full configuration options</summary>
 
-The tool uses a persistent cache to speed up incremental analysis:
+| Option | Description | Default |
+|--------|-------------|---------|
+| `srcDir` | Source directory to scan | `./src` |
+| `extensions` | File extensions to include | `[".js", ".vue", ".jsx", ".ts", ".tsx"]` |
+| `ignoreDirs` | Directories to ignore | `["node_modules", "dist", ".git"]` |
+| `mode` | Detection mode: "ast" or "regex" | `"ast"` |
+| `fix` | Enable auto-fix mode | `false` |
+| `verbose` | Enable detailed output | `false` |
+| `maxFileSize` | Max file size in bytes | `1000000` (1MB) |
+| `concurrency` | Maximum concurrency | `50` |
+| `cache` | Enable persistent cache | `true` |
+| `cacheDir` | Cache directory | `.dead-code-cache` |
+| `cacheMaxAge` | Cache max age in ms | `604800000` (7 days) |
+| `maxEntries` | Maximum cache entries | `100` |
+| `maxMemoryMB` | Maximum memory for cache | `50` |
 
-- **Cache Location**: `.dead-code-cache/analysis-cache.json`
-- **Cache Validation**: Based on file modification time (mtime) and file size
-- **Cache Expiration**: Default 7 days, configurable via `cacheMaxAge`
-- **Cache Invalidation**: Automatic when files are modified
+</details>
+
+### Incremental Analysis
+
+Speed up re-runs by analyzing only changed files:
 
 ```bash
-# Cache is automatically created and used
-dead-code
+# Incremental analysis (auto-detect main/master branch)
+dead-code --incremental
 
-# To clear the cache manually, delete the cache directory
-rm -rf .dead-code-cache
+# Specify base branch
+dead-code --incremental --base-branch develop
 ```
 
-The cache stores:
-- File analysis results (exports, imports)
-- File metadata (mtime, size, hash)
-- Timestamps for expiration management
-
-### API Usage
-
-#### Basic API
-
-```javascript
-const { detect } = require('@is_adou/dead-code-detector');
-
-async function main() {
-  // Run detection
-  const result = await detect({
-    srcDir: './src',        // Source directory
-    mode: 'ast',            // Detection mode
-    config: './.deadcoderc.json',  // Optional config file
-  });
-
-  // Access results
-  console.log('Unused exports:', result.results.unusedExports);
-  console.log('Unused components:', result.results.unusedComponents);
-  console.log('Unused utility files:', result.results.unusedToolFiles);
-
-  // Auto-fix
-  const fixResult = await result.finder.fix({
-    dryRun: false,   // Set to true to preview changes
-    confirm: true,   // Set to true for confirmation prompt
-  });
-
-  console.log('Fix result:', fixResult);
-}
-
-main();
-```
-
-#### Advanced API
-
-```javascript
-const { DeadCodeFinderAST, DeadCodeFinderRegex } = require('@is_adou/dead-code-detector');
-
-async function main() {
-  // Create finder instance
-  const finder = new DeadCodeFinderAST({
-    srcDir: './src',
-    extensions: ['.js', '.vue', '.tsx'],
-    ignoreDirs: ['node_modules', 'dist'],
-  });
-
-  // Run analysis
-  const results = await finder.analyze();
-  
-  // Get results
-  console.log('Results:', results);
-
-  // Fix unused code
-  await finder.fix({ dryRun: false });
-}
-
-main();
-```
+| Scenario | Command |
+|----------|---------|
+| Daily development | `dead-code --incremental` |
+| PR code review | `dead-code --incremental --base-branch main` |
+| Full code audit | `dead-code` |
 
 ## 🔍 Detection Modes
 
@@ -203,125 +134,57 @@ main();
 - Uses Babel AST parsing for highly accurate detection
 - Supports multi-line exports, TypeScript types, and Vue `<script setup>`
 - Better handling of complex export/import patterns
-- More reliable component detection
 
-### Regex Mode (Backward Compatible)
+### Regex Mode
 
 **For legacy projects or performance-critical scenarios**
 - Uses traditional regular expressions for faster scanning
 - Less accurate but works with older codebases
-- Recommended only when AST mode has performance issues
 - Limited support for complex syntax features
 
 ## 🛠️ Auto-fix
 
-The tool can automatically remove unused code with the `--fix` parameter. Here's how it works:
-
-### Auto-fix Features
-
-- **Smart Export Removal**: Removes unused exports while preserving used ones
-- **Multi-line Export Handling**: Properly handles complex multi-line export statements
-- **Component Cleanup**: Removes unused Vue and React components
-- **File Deletion**: Removes entirely unused utility files
-- **Backup System**: Creates automatic backups before making changes
-- **Error Recovery**: Handles syntax errors gracefully
-
-### Safety Measures
-
-1. **Always run without `--fix` first** to preview changes
-2. **Use `--dry-run`** to see what would be deleted
-3. **Use `--confirm`** for interactive confirmation
-4. **Check backups** in the `backup/` directory if needed
-
-### Example Workflow
-
 ```bash
-# 1. Preview what will be fixed
+# Preview changes
 dead-code --fix --dry-run
 
-# 2. Run with confirmation
+# Fix with confirmation
 dead-code --fix --confirm
 
-# 3. Run without confirmation (use with caution!)
+# Fix directly (use with caution!)
 dead-code --fix
 ```
 
-
+**Safety Measures:**
+1. Always run without `--fix` first to preview
+2. Use `--dry-run` to see what would be deleted
+3. Use `--confirm` for interactive confirmation
+4. Check `backup/` directory if needed
 
 ## 📚 Advanced Usage
 
-### Command Line Options
-
-#### Filter by Extensions
 ```bash
-# Only scan JavaScript and TypeScript files
+# Filter by extensions
 dead-code --ext .js,.ts,.tsx
 
-# Only scan Vue files
-dead-code --ext .vue
-```
-
-#### Ignore Directories
-```bash
-# Ignore multiple directories
+# Ignore directories
 dead-code --ignore node_modules,dist,.git,coverage
-```
 
-#### Verbose Output
-```bash
-# Show detailed progress and analysis
+# Verbose output
 dead-code --verbose
-```
 
-#### Custom Source Directory
-```bash
-# Specify custom source directory
+# Custom source directory
 dead-code --src ./src/components
-```
 
-#### Combine Multiple Options
-```bash
-# Full-featured command
+# Combine options
 dead-code --src ./src --mode ast --ext .js,.vue,.tsx --ignore node_modules,dist --verbose
 ```
 
 ## 📝 Configuration Examples
 
-### Basic Configuration
+<details>
+<summary>Vue 3 Project</summary>
 
-**File: `.deadcoderc.json`**
-```json
-{
-  "srcDir": "./src",
-  "mode": "ast"
-}
-```
-
-### Full Configuration
-
-**File: `.deadcoderc.json`**
-```json
-{
-  "srcDir": "./src",
-  "extensions": [".js", ".vue", ".jsx", ".ts", ".tsx"],
-  "ignoreDirs": ["node_modules", "dist", ".git", "coverage", ".history"],
-  "mode": "ast",
-  "fix": false,
-  "verbose": false,
-  "maxFileSize": 1000000,
-  "concurrency": 50,
-  "cache": true,
-  "cacheDir": ".dead-code-cache",
-  "cacheMaxAge": 604800000,
-  "maxEntries": 100,
-  "maxMemoryMB": 50
-}
-```
-
-### Framework-Specific Configurations
-
-#### Vue 3 Project
-**File: `.deadcoderc.json`**
 ```json
 {
   "srcDir": "./src",
@@ -331,8 +194,11 @@ dead-code --src ./src --mode ast --ext .js,.vue,.tsx --ignore node_modules,dist 
 }
 ```
 
-#### React + TypeScript Project
-**File: `.deadcoderc.json`**
+</details>
+
+<details>
+<summary>React + TypeScript Project</summary>
+
 ```json
 {
   "srcDir": "./src",
@@ -342,8 +208,11 @@ dead-code --src ./src --mode ast --ext .js,.vue,.tsx --ignore node_modules,dist 
 }
 ```
 
-#### Legacy Project (Regex Mode)
-**File: `.deadcoderc.json`**
+</details>
+
+<details>
+<summary>Legacy Project (Regex Mode)</summary>
+
 ```json
 {
   "srcDir": "./src",
@@ -353,74 +222,63 @@ dead-code --src ./src --mode ast --ext .js,.vue,.tsx --ignore node_modules,dist 
 }
 ```
 
+</details>
+
 ## 🛠️ Troubleshooting
 
 ### Common Issues
 
-#### Q: Why are some exports not detected?
+**Q: Why are some exports not detected?**
 
-**Possible reasons:**
-- Export is dynamically imported
-- Export is imported as a side effect
-- Export is used in test files
-- Path alias resolution failed
-- Export is used in a way that AST can't detect (e.g., string-based imports)
+Possible reasons: dynamically imported, imported as side effect, used in test files, or path alias resolution failed.
 
-#### Q: Why are components marked as unused?
+**Q: Why are components marked as unused?**
 
-**Possible reasons:**
-- Component is truly unused
-- Component uses different naming convention (PascalCase vs kebab-case)
-- Component is used in template but not properly imported in script
-- Component is registered globally but not imported locally
+Possible reasons: different naming convention (PascalCase vs kebab-case), used in template but not imported in script, or globally registered.
 
-#### Q: What if auto-fix deleted wrong code?
+**Q: What if auto-fix deleted wrong code?**
 
-**Solution:** The tool automatically creates backups in the `backup/` directory. You can restore files from there.
+Restore from `backup/` directory. The tool creates automatic backups before making changes.
 
-#### Q: Detection is slow for large projects?
+**Q: Detection is slow for large projects?**
 
-**Optimizations:**
-1. Use AST mode (default) - it's actually faster for large projects
+1. Use AST mode (default) - it's faster for large projects
 2. Add large directories to ignore list with `--ignore`
 3. Limit file extensions with `--ext`
-4. Use regex mode for very large projects (trade-off: less accuracy)
-
-#### Q: How to handle path aliases?
-
-**Solution:** The tool automatically detects path aliases from your project configuration (webpack, vite, etc.). If it's not working, you can manually specify aliases in your config file.
 
 ### Error Messages
 
-#### "Cannot parse file"
-
-This means the file has syntax errors. The tool will skip these files and continue analysis.
-
-#### "Path alias not resolved"
-
-Check your project configuration for path aliases, or manually specify them in your config file.
-
-#### "No files found"
-
-Make sure you've specified the correct source directory with `--src`.
+| Error | Solution |
+|-------|----------|
+| "Cannot parse file" | File has syntax errors, will be skipped |
+| "Path alias not resolved" | Check project config or specify manually |
+| "No files found" | Check source directory with `--src` |
 
 ## 📖 API Documentation
 
-Type definitions are available in [`types/index.d.ts`](./types/index.d.ts). The main API includes:
+For detailed API documentation, see [API.md](./API.md).
 
-- `detect(options)` - Run dead code detection
-- `DeadCodeFinderAST` - AST-based finder class
-- `DeadCodeFinder` - Regex-based finder class
-- `loadConfig(path)` - Load configuration file
-- `mergeConfig(cliArgs, configFile)` - Merge configuration options
+```javascript
+const { detect } = require('@is_adou/dead-code-detector');
+
+const result = await detect({ srcDir: './src' });
+console.log('Unused exports:', result.results.unusedExports);
+```
+
+## 🔄 Migration Guide
+
+Migrating from other tools? See [MIGRATION.md](./MIGRATION.md) for:
+- Migration from ts-prune, unused, webpack-deadcode-plugin
+- Version upgrade instructions
+- Configuration migration examples
+
+## 🤝 Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ## 📄 Changelog
 
-See the [CHANGELOG.md](./CHANGELOG.md) file for a comprehensive list of changes and updates, including:
-- Version history
-- New features
-- Bug fixes
-- Breaking changes
+See [CHANGELOG.md](./CHANGELOG.md) for version history.
 
 ## 🌍 Languages
 
@@ -429,13 +287,12 @@ See the [CHANGELOG.md](./CHANGELOG.md) file for a comprehensive list of changes 
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](https://opensource.org/licenses/MIT) file for details.
+MIT License - see [LICENSE](https://opensource.org/licenses/MIT) for details.
 
 ## 🙏 Acknowledgments
 
 - Built with Babel for AST parsing
 - Inspired by various dead code detection tools
-- Thanks to all contributors and users
 
 ---
 

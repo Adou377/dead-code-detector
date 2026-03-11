@@ -2,64 +2,112 @@
 
 本文档详细介绍死代码检测工具的 API 接口，帮助开发者在代码中集成使用。
 
-## 核心模块
+## 目录
 
-### 1. `detect` 函数
+- [快速开始](#快速开始)
+- [核心 API](#核心-api)
+  - [detect()](#detect)
+  - [DeadCodeFinderAST](#deadcodefinderast)
+  - [DeadCodeFinder](#deadcodefinder)
+- [增量分析](#增量分析)
+  - [IncrementalAnalyzer](#incrementalanalyzer)
+  - [DependencyGraph](#dependencygraph)
+- [缓存管理](#缓存管理)
+  - [CacheManager](#cachemanager)
+- [配置管理](#配置管理)
+- [类型定义](#类型定义)
+- [示例代码](#示例代码)
+
+## 快速开始
+
+### 安装
+
+```bash
+npm install @is_adou/dead-code-detector
+```
+
+### 基础用法
+
+```javascript
+const { detect } = require('@is_adou/dead-code-detector');
+
+const result = await detect({ srcDir: './src' });
+
+console.log('未使用的导出:', result.results.unusedExports);
+console.log('未使用的组件:', result.results.unusedComponents);
+console.log('未使用的工具文件:', result.results.unusedToolFiles);
+```
+
+### ESM 导入
+
+```javascript
+import { detect, DeadCodeFinderAST } from '@is_adou/dead-code-detector';
+```
+
+---
+
+## 核心 API
+
+### detect()
 
 主要的检测函数，用于分析项目中的死代码。
 
 #### 语法
 
-```javascript
-async function detect(options = {})
+```typescript
+async function detect(options?: DetectOptions): Promise<DetectResult>
 ```
 
 #### 参数
 
-| 参数                 | 类型       | 描述                       | 默认值                                   |
-| -------------------- | ---------- | -------------------------- | ---------------------------------------- |
-| `options.srcDir`     | `string`   | 源代码目录                 | `'./src'`                                |
-| `options.extensions` | `string[]` | 文件扩展名数组             | `['.js', '.vue', '.jsx', '.ts', '.tsx']` |
-| `options.ignoreDirs` | `string[]` | 忽略的目录数组             | `['node_modules', 'dist', '.git']`       |
-| `options.verbose`    | `boolean`  | 是否显示详细日志           | `false`                                  |
-| `options.mode`       | `string`   | 检测模式: 'ast' 或 'regex' | `'ast'`                                  |
-| `options.config`     | `string`   | 配置文件路径               | `undefined`                              |
-| `options.maxFileSize`| `number`   | 最大文件大小（字节）       | `1000000` (1MB)                          |
-| `options.concurrency`| `number`   | 最大并发数                 | `50`                                     |
+| 参数 | 类型 | 描述 | 默认值 |
+|------|------|------|--------|
+| `srcDir` | `string` | 源代码目录 | `'./src'` |
+| `extensions` | `string[]` | 文件扩展名数组 | `['.js', '.vue', '.jsx', '.ts', '.tsx']` |
+| `ignoreDirs` | `string[]` | 忽略的目录数组 | `['node_modules', 'dist', '.git']` |
+| `mode` | `'ast' \| 'regex'` | 检测模式 | `'ast'` |
+| `verbose` | `boolean` | 是否显示详细日志 | `false` |
+| `config` | `string` | 配置文件路径 | `undefined` |
+| `maxFileSize` | `number` | 最大文件大小（字节） | `1000000` (1MB) |
+| `concurrency` | `number` | 最大并发数 | `50` |
 
 #### 返回值
 
-返回一个 Promise，解析为包含以下属性的对象：
-
-| 属性                       | 类型     | 描述                 |
-| -------------------------- | -------- | -------------------- |
-| `finder`                   | `Object` | 检测器实例           |
-| `results`                  | `Object` | 检测结果             |
-| `results.unusedExports`    | `Array`  | 未使用的导出列表     |
-| `results.unusedComponents` | `Array`  | 未使用的组件列表     |
-| `results.unusedToolFiles`  | `Array`  | 未使用的工具文件列表 |
+```typescript
+interface DetectResult {
+  finder: DeadCodeFinderAST | DeadCodeFinder;
+  results: {
+    unusedExports: UnusedExport[];
+    unusedComponents: UnusedComponent[];
+    unusedToolFiles: string[];
+  };
+}
+```
 
 #### 示例
 
 ```javascript
 const { detect } = require('@is_adou/dead-code-detector');
 
-async function main() {
-  const result = await detect({
-    srcDir: './src',
-    mode: 'ast',
-    verbose: true,
+const result = await detect({
+  srcDir: './src',
+  mode: 'ast',
+  verbose: true,
+  maxFileSize: 2000000,
+  concurrency: 100,
+});
+
+if (result.results.unusedExports.length > 0) {
+  console.log('发现未使用的导出:');
+  result.results.unusedExports.forEach(exp => {
+    console.log(`  - ${exp.name} (${exp.file}:${exp.line})`);
   });
-
-  console.log('未使用的导出:', result.results.unusedExports);
-  console.log('未使用的组件:', result.results.unusedComponents);
-  console.log('未使用的工具文件:', result.results.unusedToolFiles);
 }
-
-main();
 ```
 
-### 2. `DeadCodeFinderAST` 类
+---
+
+### DeadCodeFinderAST
 
 基于 AST 的死代码检测器类，提供更准确的检测能力。
 
@@ -73,6 +121,8 @@ const finder = new DeadCodeFinderAST({
   extensions: ['.js', '.vue', '.jsx', '.ts', '.tsx'],
   ignoreDirs: ['node_modules', 'dist', '.git'],
   verbose: false,
+  maxFileSize: 1000000,
+  concurrency: 50,
 });
 ```
 
@@ -82,46 +132,49 @@ const finder = new DeadCodeFinderAST({
 
 执行完整的死代码分析。
 
-**语法**:
-
-```javascript
-async function analyze()
+```typescript
+async function analyze(): Promise<AnalysisResults>
 ```
-
-**返回值**:
-返回一个 Promise，解析为包含检测结果的对象。
 
 ##### `report()`
 
 生成并打印分析报告。
 
-**语法**:
-
-```javascript
-function report()
+```typescript
+function report(): AnalysisResults
 ```
-
-**返回值**:
-返回包含检测结果的对象。
 
 ##### `fix(options)`
 
 自动修复未使用的代码。
 
-**语法**:
-
-```javascript
-async function fix(options = {})
+```typescript
+async function fix(options?: FixOptions): Promise<FixResult>
 ```
 
-**参数**:
 | 参数 | 类型 | 描述 | 默认值 |
 |------|------|------|--------|
-| `options.dryRun` | `boolean` | 是否仅预览修复，不实际执行 | `false` |
-| `options.confirm` | `boolean` | 是否需要用户确认 | `false` |
+| `dryRun` | `boolean` | 仅预览，不实际执行 | `false` |
+| `confirm` | `boolean` | 需要用户确认 | `false` |
 
-**返回值**:
-返回一个 Promise，解析为修复结果对象。
+##### `generateFixPreview()`
+
+生成修复预览，返回将要删除的内容。
+
+```typescript
+function generateFixPreview(): FixPreview
+```
+
+#### 属性
+
+| 属性 | 类型 | 描述 |
+|------|------|------|
+| `unusedExports` | `UnusedExport[]` | 未使用的导出列表 |
+| `unusedComponents` | `UnusedComponent[]` | 未使用的组件列表 |
+| `unusedToolFiles` | `string[]` | 未使用的工具文件列表 |
+| `exports` | `Map<string, ExportItem[]>` | 所有导出映射 |
+| `imports` | `Map<string, any[]>` | 所有导入映射 |
+| `components` | `Map<string, ComponentItem>` | 所有组件映射 |
 
 #### 示例
 
@@ -134,166 +187,266 @@ async function main() {
     verbose: true,
   });
 
-  // 执行分析
   await finder.analyze();
-
-  // 生成报告
+  
   const report = finder.report();
+  console.log(`发现 ${report.unusedExports.length} 个未使用的导出`);
 
-  // 自动修复
   const fixResult = await finder.fix({
-    dryRun: false,
+    dryRun: true,
     confirm: true,
   });
-
+  
   console.log('修复结果:', fixResult);
 }
 
 main();
 ```
 
-### 3. `DeadCodeFinder` 类
+---
+
+### DeadCodeFinder
 
 基于正则表达式的死代码检测器类，提供向后兼容的检测能力。
 
 #### 构造函数
 
-```javascript
-const { DeadCodeFinder } = require('@is_adou/dead-code-detector');
+与 `DeadCodeFinderAST` 相同。
 
-const finder = new DeadCodeFinder({
+#### 方法
+
+与 `DeadCodeFinderAST` 类相同，包含 `analyze()`、`report()` 和 `fix()` 方法。
+
+> **注意**: 正则模式不支持 `generateFixPreview()` 方法。
+
+---
+
+## 增量分析
+
+### IncrementalAnalyzer
+
+增量分析器类，封装增量分析逻辑，支持缓存和 Git 变更检测。
+
+#### 构造函数
+
+```javascript
+const { IncrementalAnalyzer } = require('@is_adou/dead-code-detector');
+
+const analyzer = new IncrementalAnalyzer({
   srcDir: './src',
-  extensions: ['.js', '.vue', '.jsx', '.ts', '.tsx'],
-  ignoreDirs: ['node_modules', 'dist', '.git'],
+  baseBranch: 'main',
+  cacheDir: '.dead-code-cache',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
   verbose: false,
 });
 ```
 
 #### 方法
 
-与 `DeadCodeFinderAST` 类相同，包含 `analyze()`、`report()` 和 `fix()` 方法。
+##### `initialize()`
 
-### 4. 配置相关函数
+初始化分析器，加载缓存。
 
-#### `loadConfig(configPath)`
-
-加载配置文件。
-
-**语法**:
-
-```javascript
-function loadConfig(configPath)
+```typescript
+function initialize(): IncrementalAnalyzer
 ```
 
-**参数**:
-| 参数 | 类型 | 描述 |
-|------|------|------|
-| `configPath` | `string` | 配置文件路径 |
+##### `getChangedFiles()`
 
-**返回值**:
-返回配置对象，如果没有找到配置文件则返回 `undefined`。
+获取相对于基准分支的变更文件列表。
 
-#### `mergeConfig(options, configFile)`
-
-合并命令行选项和配置文件。
-
-**语法**:
-
-```javascript
-function mergeConfig(options, configFile)
-```
-
-**参数**:
-| 参数 | 类型 | 描述 |
-|------|------|------|
-| `options` | `Object` | 命令行选项 |
-| `configFile` | `Object` | 配置文件对象 |
-
-**返回值**:
-返回合并后的配置对象。
-
-## 检测结果格式
-
-### 未使用的导出
-
-```javascript
-[
-  {
-    file: 'path/to/file.js', // 文件路径
-    name: 'unusedFunction', // 导出名称
-    type: 'function', // 导出类型: function, variable, class, type, interface, enum
-    line: 10, // 行号
-    isDefault: false, // 是否为默认导出
-  },
-  // 更多未使用的导出...
-];
-```
-
-### 未使用的组件
-
-```javascript
-[
-  {
-    file: 'components/UnusedComponent.vue', // 组件文件路径
-    name: 'UnusedComponent', // 组件名称
-  },
-  // 更多未使用的组件...
-];
-```
-
-### 未使用的工具文件
-
-```javascript
-[
-  'utils/unusedUtil.js', // 未使用的工具文件路径
-  'helpers/oldHelper.ts', // 未使用的工具文件路径
-  // 更多未使用的工具文件...
-];
-```
-
-## 错误处理
-
-当遇到解析错误时，工具会记录警告并继续执行，不会因为单个文件的错误而中断整个检测过程。
-
-```javascript
-try {
-  const result = await detect({
-    srcDir: './src',
-  });
-  // 处理结果
-} catch (error) {
-  console.error('检测过程中发生错误:', error);
+```typescript
+function getChangedFiles(): {
+  files: string[] | null;
+  branch: string;
+  autoDetected: boolean;
+  fallback: boolean;
+  reason: string;
 }
 ```
 
-## 缓存模块
+##### `getUncommittedChanges()`
 
-### `CacheManager` 类
+获取未提交的变更文件列表。
 
-缓存管理器，用于持久化缓存分析结果，支持增量分析。
+```typescript
+function getUncommittedChanges(): string[] | null
+```
+
+##### `analyzeAffectedFiles(changedFiles, imports)`
+
+分析受影响的文件（使用依赖图）。
+
+```typescript
+function analyzeAffectedFiles(
+  changedFiles: string[],
+  imports: Map<string, any[]>
+): Set<string>
+```
+
+##### `analyzeWithCache(filePaths, analyzer)`
+
+批量分析文件，使用缓存优化。
+
+```typescript
+function analyzeWithCache(
+  filePaths: string[],
+  analyzer: (filePath: string) => any
+): {
+  data: Map<string, any>;
+  cacheHits: number;
+  cacheMisses: number;
+  errors: Array<{ filePath: string; error: string }>;
+}
+```
+
+##### `isIncrementalSupported()`
+
+检查是否支持增量分析（是否在 Git 仓库中）。
+
+```typescript
+function isIncrementalSupported(): boolean
+```
+
+##### `getCurrentBranch()`
+
+获取当前分支名。
+
+```typescript
+function getCurrentBranch(): string | null
+```
+
+##### `getLastCommitHash()`
+
+获取最近一次提交的哈希。
+
+```typescript
+function getLastCommitHash(): string | null
+```
+
+#### 示例
+
+```javascript
+const { IncrementalAnalyzer } = require('@is_adou/dead-code-detector');
+
+const analyzer = new IncrementalAnalyzer({
+  srcDir: './src',
+  baseBranch: 'main',
+}).initialize();
+
+const changedFiles = analyzer.getChangedFiles();
+
+if (changedFiles.files && changedFiles.files.length > 0) {
+  console.log(`检测到 ${changedFiles.files.length} 个变更文件`);
+  console.log(`基准分支: ${changedFiles.branch}`);
+}
+
+const stats = analyzer.getCacheStats();
+console.log(`缓存命中率: ${(stats.hitRate * 100).toFixed(2)}%`);
+```
+
+---
+
+### DependencyGraph
+
+依赖图管理类，负责构建、缓存和查询文件依赖关系。
+
+#### 构造函数
+
+```javascript
+const { DependencyGraph } = require('@is_adou/dead-code-detector');
+
+const depGraph = new DependencyGraph();
+```
+
+#### 方法
+
+##### `addDependency(from, to)`
+
+添加依赖关系。
+
+```typescript
+function addDependency(from: string, to: string): void
+```
+
+##### `buildFromImports(imports, srcDir)`
+
+批量构建依赖图。
+
+```typescript
+function buildFromImports(
+  imports: Map<string, any[]>,
+  srcDir: string
+): void
+```
+
+##### `getAffectedFiles(changedFiles)`
+
+获取受影响的所有文件（使用 BFS 遍历反向依赖）。
+
+```typescript
+function getAffectedFiles(changedFiles: string[]): Set<string>
+```
+
+##### `getStats()`
+
+获取统计信息。
+
+```typescript
+function getStats(): {
+  totalFiles: number;
+  totalDependencies: number;
+  reverseDepsCount: number;
+}
+```
+
+##### `clear()`
+
+清空依赖图。
+
+```typescript
+function clear(): void
+```
+
+#### 示例
+
+```javascript
+const { DependencyGraph } = require('@is_adou/dead-code-detector');
+
+const depGraph = new DependencyGraph();
+
+depGraph.buildFromImports(importsMap, './src');
+
+const affectedFiles = depGraph.getAffectedFiles(['src/utils/helper.js']);
+console.log(`受影响的文件: ${affectedFiles.size} 个`);
+
+const stats = depGraph.getStats();
+console.log(`总文件数: ${stats.totalFiles}`);
+console.log(`总依赖数: ${stats.totalDependencies}`);
+```
+
+---
+
+## 缓存管理
+
+### CacheManager
+
+缓存管理器，用于持久化缓存分析结果。
 
 #### 构造函数
 
 ```javascript
 const { CacheManager } = require('@is_adou/dead-code-detector');
 
-const cacheManager = new CacheManager({
+const cache = new CacheManager({
   projectRoot: './my-project',
   cacheDir: '.dead-code-cache',
   cacheFile: 'analysis-cache.json',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
-  maxEntries: 100, // 最大缓存条目数
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  maxEntries: 100,
+  maxMemoryMB: 50,
 });
 ```
-
-**参数**:
-| 参数 | 类型 | 描述 | 默认值 |
-|------|------|------|--------|
-| `projectRoot` | `string` | 项目根目录 | `process.cwd()` |
-| `cacheDir` | `string` | 缓存目录名 | `'.dead-code-cache'` |
-| `cacheFile` | `string` | 缓存文件名 | `'analysis-cache.json'` |
-| `maxAge` | `number` | 缓存过期时间（毫秒） | `604800000` (7天) |
-| `maxEntries` | `number` | 最大缓存条目数 | `100` |
 
 #### 方法
 
@@ -301,69 +454,64 @@ const cacheManager = new CacheManager({
 
 加载缓存数据。
 
-**返回值**: 缓存对象
+```typescript
+function load(): CacheData
+```
 
 ##### `save()`
 
 保存缓存到文件。
 
-**返回值**: `boolean` - 是否保存成功
+```typescript
+function save(): boolean
+```
 
 ##### `get(filePath)`
 
 获取文件缓存数据。
 
-**参数**:
-| 参数 | 类型 | 描述 |
-|------|------|------|
-| `filePath` | `string` | 文件路径 |
-
-**返回值**: 缓存数据或 `null`
+```typescript
+function get(filePath: string): any | null
+```
 
 ##### `set(filePath, data)`
 
 设置文件缓存数据。
 
-**参数**:
-| 参数 | 类型 | 描述 |
-|------|------|------|
-| `filePath` | `string` | 文件路径 |
-| `data` | `any` | 缓存数据 |
-
-**返回值**: `boolean` - 是否设置成功
+```typescript
+function set(filePath: string, data: any): boolean
+```
 
 ##### `invalidate(filePath)`
 
 使指定文件的缓存失效。
 
-**参数**:
-| 参数 | 类型 | 描述 |
-|------|------|------|
-| `filePath` | `string` | 文件路径 |
-
-**返回值**: `boolean` - 是否操作成功
+```typescript
+function invalidate(filePath: string): boolean
+```
 
 ##### `clear()`
 
 清空所有缓存。
 
-**返回值**: `boolean` - 是否清空成功
+```typescript
+function clear(): boolean
+```
 
 ##### `getStats()`
 
 获取缓存统计信息。
 
-**返回值**:
-```javascript
-{
-  totalFiles: number,      // 缓存文件总数
-  totalSize: number,       // 缓存总大小（字节）
-  oldestEntry: Date | null, // 最早条目时间
-  newestEntry: Date | null, // 最新条目时间
-  lastSaved: Date | null,   // 最后保存时间
-  hits: number,            // 缓存命中次数
-  misses: number,          // 缓存未命中次数
-  hitRate: number,         // 缓存命中率 (0-1)
+```typescript
+function getStats(): {
+  totalFiles: number;
+  totalSize: number;
+  oldestEntry: Date | null;
+  newestEntry: Date | null;
+  lastSaved: Date | null;
+  hits: number;
+  misses: number;
+  hitRate: number;
 }
 ```
 
@@ -371,33 +519,17 @@ const cacheManager = new CacheManager({
 
 获取缓存条目的年龄（毫秒）。
 
-**参数**:
-| 参数 | 类型 | 描述 |
-|------|------|------|
-| `filePath` | `string` | 文件路径 |
-
-**返回值**: `number | null` - 缓存年龄（毫秒），不存在则返回 `null`
+```typescript
+function getAge(filePath: string): number | null
+```
 
 ##### `isExpired(filePath)`
 
 检查缓存条目是否已过期。
 
-**参数**:
-| 参数 | 类型 | 描述 |
-|------|------|------|
-| `filePath` | `string` | 文件路径 |
-
-**返回值**: `boolean` - 是否已过期
-
-##### `getHitRate()`
-
-获取缓存命中率。
-
-**返回值**: `number` - 命中率 (0-1)
-
-##### `resetStats()`
-
-重置命中率统计。
+```typescript
+function isExpired(filePath: string): boolean
+```
 
 #### 示例
 
@@ -407,107 +539,153 @@ const { CacheManager } = require('@is_adou/dead-code-detector');
 const cache = new CacheManager({
   projectRoot: './my-project',
   maxAge: 7 * 24 * 60 * 60 * 1000,
-  maxEntries: 100,
 });
 
-// 加载缓存
 cache.load();
 
-// 设置缓存
 cache.set('/path/to/file.js', { exports: ['foo', 'bar'] });
 
-// 获取缓存
 const data = cache.get('/path/to/file.js');
-console.log(data); // { exports: ['foo', 'bar'] }
+console.log(data);
 
-// 获取缓存统计
 const stats = cache.getStats();
 console.log(`缓存命中率: ${(stats.hitRate * 100).toFixed(2)}%`);
 
-// 检查缓存年龄
-const age = cache.getAge('/path/to/file.js');
-console.log(`缓存年龄: ${age}ms`);
-
-// 保存缓存
 cache.save();
 ```
 
-## 性能优化
+---
 
-1. **并行处理**: 工具默认使用最多 50 个文件同时处理，提高检测速度
-2. **内存优化**: 按需加载文件内容，避免一次性加载所有文件到内存
-3. **文件大小限制**: 对过大的文件会跳过解析，避免内存溢出
+## 配置管理
 
-## 最佳实践
+### loadConfig()
 
-1. **先分析后修复**: 先运行不带 `--fix` 的检测，确认需要删除的内容
-2. **备份重要代码**: 虽然工具会自动创建备份，但仍建议手动备份重要代码
-3. **合理配置**: 根据项目特点调整配置选项，提高检测准确性
-4. **定期检测**: 将死代码检测集成到 CI/CD 流程中，定期运行
+加载配置文件。
 
-## 常见问题
+```typescript
+function loadConfig(configPath?: string): ConfigFileOptions | null
+```
 
-### Q: 为什么某些导出没有被检测到？
+支持以下配置文件格式（优先级从高到低）：
+- `.deadcoderc.json`
+- `.deadcoderc.js`
+- `deadcode.config.js`
 
-A: 可能的原因包括：
+### mergeConfig()
 
-- 导出被动态导入使用
-- 导出被作为副作用导入
-- 导出在测试文件中使用
-- 路径别名解析失败
+合并命令行选项和配置文件。
 
-### Q: 为什么组件被标记为未使用？
+```typescript
+function mergeConfig(
+  cliArgs?: Partial<ConfigFileOptions>,
+  configFile?: ConfigFileOptions | null
+): ConfigFileOptions
+```
 
-A: 可能的原因包括：
+合并优先级：CLI 参数 > 配置文件 > 默认值
 
-- 组件确实未被使用
-- 组件使用了不同的命名方式（如 PascalCase vs kebab-case）
-- 组件在模板中使用但未在脚本中导入
+### validateConfig()
 
-### Q: 自动修复会删除哪些内容？
+验证配置对象。
 
-A: 自动修复会删除：
+```typescript
+function validateConfig(config: any): boolean
+```
 
-- 未使用的导出语句
-- 未使用的组件文件
-- 未使用的工具文件
+---
 
-## 版本兼容性
+## 类型定义
 
-- Node.js: >= 12.0.0
-- Babel: >= 7.0.0
-- Vue: 2.x 和 3.x
-- React: 16.x 和 17.x
-- TypeScript: >= 3.0.0
+### 核心类型
+
+```typescript
+interface DetectOptions {
+  srcDir?: string;
+  extensions?: string[];
+  ignoreDirs?: string[];
+  verbose?: boolean;
+  mode?: 'ast' | 'regex';
+  config?: string;
+  maxFileSize?: number;
+  concurrency?: number;
+}
+
+interface AnalysisResults {
+  unusedExports: UnusedExport[];
+  unusedComponents: UnusedComponent[];
+  unusedToolFiles: string[];
+}
+
+interface UnusedExport {
+  file: string;
+  name: string;
+  type: 'function' | 'variable' | 'class' | 'type' | 'interface' | 'enum' | 'default' | 'named' | 'star' | 'reexport';
+  line: number;
+  isDefault?: boolean;
+  code?: string;
+}
+
+interface UnusedComponent {
+  file: string;
+  name: string;
+  isLocal?: boolean;
+  isGlobal?: boolean;
+  isScriptSetup?: boolean;
+}
+
+interface FixOptions {
+  dryRun?: boolean;
+  confirm?: boolean;
+}
+
+interface FixResult {
+  unusedExports: number;
+  unusedComponents: number;
+  unusedToolFiles: number;
+  cancelled?: boolean;
+  preview?: any;
+  dryRun?: boolean;
+}
+
+interface ExportItem {
+  name: string;
+  type: string;
+  line: number;
+  code: string;
+  source?: string;
+}
+
+interface ComponentItem {
+  file: string;
+  name: string;
+  used?: boolean;
+  isGlobal?: boolean;
+  isLocal?: boolean;
+  isScriptSetup?: boolean;
+  composables?: string[];
+  exposed?: string[];
+}
+```
+
+---
 
 ## 示例代码
 
-### 基本用法
+### 基本检测
 
 ```javascript
 const { detect } = require('@is_adou/dead-code-detector');
 
 async function checkDeadCode() {
-  console.log('开始检测死代码...');
-
   const result = await detect({
     srcDir: './src',
     mode: 'ast',
     verbose: true,
   });
 
-  console.log('检测完成！');
   console.log(`发现 ${result.results.unusedExports.length} 个未使用的导出`);
   console.log(`发现 ${result.results.unusedComponents.length} 个未使用的组件`);
   console.log(`发现 ${result.results.unusedToolFiles.length} 个未使用的工具文件`);
-
-  // 显示详细信息
-  if (result.results.unusedExports.length > 0) {
-    console.log('\n未使用的导出:');
-    result.results.unusedExports.forEach(exp => {
-      console.log(`- ${exp.name} (${exp.file}:${exp.line})`);
-    });
-  }
 }
 
 checkDeadCode().catch(console.error);
@@ -519,24 +697,13 @@ checkDeadCode().catch(console.error);
 const { detect } = require('@is_adou/dead-code-detector');
 
 async function fixDeadCode() {
-  console.log('开始检测并修复死代码...');
+  const result = await detect({ srcDir: './src' });
 
-  const result = await detect({
-    srcDir: './src',
-    mode: 'ast',
-  });
-
-  // 预览修复
-  const fixPreview = result.finder.generateFixPreview();
-  console.log('修复预览:', fixPreview);
-
-  // 执行修复
   const fixResult = await result.finder.fix({
     dryRun: false,
     confirm: true,
   });
 
-  console.log('修复完成！');
   console.log(`已修复 ${fixResult.unusedExports} 个未使用的导出`);
   console.log(`已删除 ${fixResult.unusedComponents} 个未使用的组件`);
   console.log(`已删除 ${fixResult.unusedToolFiles} 个未使用的工具文件`);
@@ -545,21 +712,37 @@ async function fixDeadCode() {
 fixDeadCode().catch(console.error);
 ```
 
+### 增量分析
+
+```javascript
+const { detect } = require('@is_adou/dead-code-detector');
+
+async function incrementalCheck() {
+  const result = await detect({
+    srcDir: './src',
+    incremental: true,
+    baseBranch: 'main',
+  });
+
+  console.log('增量分析结果:', result.results);
+}
+
+incrementalCheck().catch(console.error);
+```
+
 ### 集成到构建流程
 
 ```javascript
-// 在构建脚本中使用
 const { detect } = require('@is_adou/dead-code-detector');
 
 async function build() {
-  // 先检测死代码
   console.log('检测死代码...');
+  
   const result = await detect({
     srcDir: './src',
     mode: 'ast',
   });
 
-  // 检查是否有未使用的代码
   const hasDeadCode =
     result.results.unusedExports.length > 0 ||
     result.results.unusedComponents.length > 0 ||
@@ -567,110 +750,61 @@ async function build() {
 
   if (hasDeadCode) {
     console.warn('警告: 发现未使用的代码！');
-    // 可以选择退出构建或继续
+    process.exitCode = 1;
   }
 
-  // 继续构建流程
   console.log('开始构建...');
-  // 构建代码...
 }
 
 build().catch(console.error);
 ```
 
-## TypeScript 类型定义
-
-### 核心类型
+### TypeScript 使用
 
 ```typescript
-// 检测选项
-interface DetectOptions {
-  srcDir?: string;
-  extensions?: string[];
-  ignoreDirs?: string[];
-  verbose?: boolean;
-  mode?: 'ast' | 'regex';
-  config?: string;
-}
+import {
+  detect,
+  DeadCodeFinderAST,
+  type DetectOptions,
+  type DetectResult,
+  type AnalysisResults
+} from '@is_adou/dead-code-detector';
 
-// 检测结果
-interface DetectResult {
-  finder: DeadCodeFinder | DeadCodeFinderAST;
-  results: {
-    unusedExports: UnusedExport[];
-    unusedComponents: UnusedComponent[];
-    unusedToolFiles: string[];
-  };
-}
-
-// 未使用的导出
-interface UnusedExport {
-  file: string;
-  name: string;
-  type:
-    | 'function'
-    | 'variable'
-    | 'class'
-    | 'type'
-    | 'interface'
-    | 'enum'
-    | 'default'
-    | 'named'
-    | 'star'
-    | 'reexport';
-  line: number;
-  isDefault?: boolean;
-  code?: string;
-}
-
-// 未使用的组件
-interface UnusedComponent {
-  file: string;
-  name: string;
-  isLocal?: boolean;
-}
-
-// 修复选项
-interface FixOptions {
-  dryRun?: boolean;
-  confirm?: boolean;
-}
-
-// 修复结果
-interface FixResult {
-  unusedExports: number;
-  unusedComponents: number;
-  unusedToolFiles: number;
-  cancelled?: boolean;
-}
-```
-
-### 使用示例
-
-```typescript
-import { detect, DeadCodeFinderAST } from '@is_adou/dead-code-detector';
-
-const result = await detect({
+const options: DetectOptions = {
   srcDir: './src',
   mode: 'ast',
   extensions: ['.js', '.vue', '.ts'],
   ignoreDirs: ['node_modules', 'dist'],
   verbose: true,
-});
+};
 
-const { unusedExports, unusedComponents, unusedToolFiles } = result.results;
+const result: DetectResult = await detect(options);
+const { unusedExports, unusedComponents, unusedToolFiles }: AnalysisResults = result.results;
 ```
+
+---
 
 ## 错误码说明
 
-| 错误码 | 说明             | 解决方案             |
-| ------ | ---------------- | -------------------- |
-| E001   | 无法访问源目录   | 检查目录路径是否正确 |
-| E002   | 配置文件格式错误 | 检查 JSON 语法       |
-| E003   | 文件解析失败     | 检查文件语法是否正确 |
-| E004   | 自动修复失败     | 手动备份后重试       |
+| 错误码 | 说明 | 解决方案 |
+|--------|------|----------|
+| E001 | 无法访问源目录 | 检查目录路径是否正确 |
+| E002 | 配置文件格式错误 | 检查 JSON 语法 |
+| E003 | 文件解析失败 | 检查文件语法是否正确 |
+| E004 | 自动修复失败 | 手动备份后重试 |
+
+## 版本兼容性
+
+| 依赖 | 版本要求 |
+|------|----------|
+| Node.js | >= 12.0.0 |
+| Babel | >= 7.0.0 |
+| Vue | 2.x 和 3.x |
+| React | 16.x+ |
+| TypeScript | >= 3.0.0 |
 
 ## 相关链接
 
 - [GitHub 仓库](https://github.com/Adou377/dead-code-detector)
 - [问题反馈](https://github.com/Adou377/dead-code-detector/issues)
+- [更新日志](./CHANGELOG.md)

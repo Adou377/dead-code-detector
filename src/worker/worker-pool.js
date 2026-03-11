@@ -99,6 +99,11 @@ class WorkerPool {
       if (task) {
         this.activeTasks.delete(taskId);
 
+        // 清除超时定时器，防止进程无法退出
+        if (task.timeoutId) {
+          clearTimeout(task.timeoutId);
+        }
+
         if (error) {
           task.reject(new Error(error));
         } else {
@@ -124,6 +129,10 @@ class WorkerPool {
     if (taskId) {
       const task = this.activeTasks.get(taskId);
       if (task) {
+        // 清除超时定时器
+        if (task.timeoutId) {
+          clearTimeout(task.timeoutId);
+        }
         this.activeTasks.delete(taskId);
         task.reject(error);
       }
@@ -136,6 +145,9 @@ class WorkerPool {
     if (workerIndex !== -1) {
       this.workers.splice(workerIndex, 1);
     }
+
+    // 终止出错的 Worker，防止进程无法退出
+    workerInfo.worker.terminate().catch(() => {});
 
     if (!this.isShuttingDown && this.workers.length < this.workerCount) {
       this.createWorker().then(() => {
@@ -155,6 +167,10 @@ class WorkerPool {
     if (taskId) {
       const task = this.activeTasks.get(taskId);
       if (task) {
+        // 清除超时定时器
+        if (task.timeoutId) {
+          clearTimeout(task.timeoutId);
+        }
         this.activeTasks.delete(taskId);
         task.reject(new Error(`Worker 意外退出，退出码: ${code}`));
       }
@@ -164,6 +180,11 @@ class WorkerPool {
     if (workerIndex !== -1) {
       this.workers.splice(workerIndex, 1);
     }
+
+    // 终止 Worker 以确保资源释放
+    // 在真实场景中 Worker 已退出，terminate 会安全地处理这种情况
+    // 在测试场景中手动调用此方法时，需要显式终止 Worker
+    workerInfo.worker.terminate().catch(() => {});
   }
 
   /**

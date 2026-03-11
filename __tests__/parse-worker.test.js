@@ -74,10 +74,11 @@ export const testProp = 'value';
         maxFileSize: 1000000,
       });
 
-      // 纯模板组件是合法的 Vue 3 组件，应该返回成功
+      // 纯模板组件是合法的 Vue 3 组件，但没有可追踪的导出
       expect(result.success).toBe(true);
       expect(result.vueInfo).toBeDefined();
-      expect(result.vueInfo.isComponent).toBe(true);
+      expect(result.vueInfo.isPureTemplateComponent).toBe(true);
+      expect(result.vueInfo.isComponent).toBe(false);
     });
 
     test('应该正确解析 TypeScript 文件', () => {
