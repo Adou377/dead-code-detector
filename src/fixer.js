@@ -7,6 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const { analyzeLinesToRemove } = require('./analyzer.js');
+const { readFileContent } = require('./utils.js');
 
 function createBackupDir(srcDir) {
   const backupDir = path.join(srcDir, '../backup');
@@ -41,7 +42,12 @@ function applyFixToFile(fullPath, originalContent, analysisResult) {
 }
 
 function removeUnusedExports(fullPath, items) {
-  const content = fs.readFileSync(fullPath, 'utf-8');
+  const result = readFileContent(fullPath);
+  if (!result.success) {
+    throw result.error;
+  }
+
+  const content = result.content;
   const originalContent = content;
 
   try {

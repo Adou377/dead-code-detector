@@ -6,7 +6,6 @@ const {
   isSafePath,
   hasPathTraversal,
   PerformanceStats,
-  validateOptions,
 } = require('../src/utils');
 
 describe('Utils', () => {
@@ -356,106 +355,6 @@ describe('Utils', () => {
       
       stats.end();
       expect(stats.memoryPeak).toBeGreaterThan(0);
-    });
-  });
-
-  describe('validateOptions', () => {
-    describe('srcDir 验证', () => {
-      test('应该接受有效的相对路径', () => {
-        expect(() => validateOptions({ srcDir: './src' })).not.toThrow();
-        expect(() => validateOptions({ srcDir: 'src' })).not.toThrow();
-        expect(() => validateOptions({ srcDir: '../src' })).not.toThrow();
-      });
-
-      test('应该接受有效的绝对路径', () => {
-        expect(() => validateOptions({ srcDir: '/app/src' })).not.toThrow();
-        expect(() => validateOptions({ srcDir: 'C:\\project\\src' })).not.toThrow();
-      });
-
-      test('应该拒绝空字符串', () => {
-        expect(() => validateOptions({ srcDir: '' })).toThrow('srcDir 必须是非空字符串');
-        expect(() => validateOptions({ srcDir: '   ' })).toThrow('srcDir 必须是非空字符串');
-      });
-
-      test('应该拒绝非字符串类型', () => {
-        expect(() => validateOptions({ srcDir: 123 })).toThrow('srcDir 必须是非空字符串');
-        expect(() => validateOptions({ srcDir: null })).toThrow('srcDir 必须是非空字符串');
-        expect(() => validateOptions({ srcDir: {} })).toThrow('srcDir 必须是非空字符串');
-      });
-
-      test('应该拒绝包含空字符的路径', () => {
-        expect(() => validateOptions({ srcDir: '/src\0malicious' })).toThrow('srcDir 包含非法字符');
-      });
-    });
-
-    describe('concurrency 验证', () => {
-      test('应该接受有效范围内的并发数', () => {
-        expect(() => validateOptions({ concurrency: 1 })).not.toThrow();
-        expect(() => validateOptions({ concurrency: 50 })).not.toThrow();
-        expect(() => validateOptions({ concurrency: 1000 })).not.toThrow();
-      });
-
-      test('应该拒绝小于 1 的并发数', () => {
-        expect(() => validateOptions({ concurrency: 0 })).toThrow('concurrency 必须在 1 到 1000 之间');
-        expect(() => validateOptions({ concurrency: -1 })).toThrow('concurrency 必须在 1 到 1000 之间');
-      });
-
-      test('应该拒绝大于 1000 的并发数', () => {
-        expect(() => validateOptions({ concurrency: 1001 })).toThrow('concurrency 必须在 1 到 1000 之间');
-      });
-
-      test('应该拒绝非整数并发数', () => {
-        expect(() => validateOptions({ concurrency: 1.5 })).toThrow('concurrency 必须是整数');
-        expect(() => validateOptions({ concurrency: '50' })).toThrow('concurrency 必须是整数');
-        expect(() => validateOptions({ concurrency: null })).toThrow('concurrency 必须是整数');
-      });
-    });
-
-    describe('maxFileSize 验证', () => {
-      test('应该接受有效范围内的文件大小', () => {
-        expect(() => validateOptions({ maxFileSize: 0 })).not.toThrow();
-        expect(() => validateOptions({ maxFileSize: 1000000 })).not.toThrow();
-        expect(() => validateOptions({ maxFileSize: 10 * 1024 * 1024 })).not.toThrow();
-      });
-
-      test('应该拒绝负数文件大小', () => {
-        expect(() => validateOptions({ maxFileSize: -1 })).toThrow('maxFileSize 必须在 0 到 10MB 之间');
-      });
-
-      test('应该拒绝超过 10MB 的文件大小', () => {
-        expect(() => validateOptions({ maxFileSize: 10 * 1024 * 1024 + 1 })).toThrow('maxFileSize 必须在 0 到 10MB 之间');
-      });
-
-      test('应该拒绝非数字类型', () => {
-        expect(() => validateOptions({ maxFileSize: '1000000' })).toThrow('maxFileSize 必须是数字');
-        expect(() => validateOptions({ maxFileSize: NaN })).toThrow('maxFileSize 必须是数字');
-      });
-    });
-
-    describe('综合验证', () => {
-      test('应该接受空对象', () => {
-        expect(() => validateOptions({})).not.toThrow();
-      });
-
-      test('应该接受所有有效参数', () => {
-        expect(() => validateOptions({
-          srcDir: './src',
-          concurrency: 100,
-          maxFileSize: 2000000,
-        })).not.toThrow();
-      });
-
-      test('应该拒绝非对象参数', () => {
-        expect(() => validateOptions(null)).toThrow('配置选项必须是一个对象');
-        expect(() => validateOptions('string')).toThrow('配置选项必须是一个对象');
-        expect(() => validateOptions(123)).toThrow('配置选项必须是一个对象');
-      });
-
-      test('应该忽略未定义的参数', () => {
-        expect(() => validateOptions({ srcDir: undefined })).not.toThrow();
-        expect(() => validateOptions({ concurrency: undefined })).not.toThrow();
-        expect(() => validateOptions({ maxFileSize: undefined })).not.toThrow();
-      });
     });
   });
 });

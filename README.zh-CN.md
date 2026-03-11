@@ -11,6 +11,8 @@
 - **配置灵活性**: `.deadcoderc.json`、`.deadcoderc.js` 和 `deadcode.config.js`
 - **路径别名支持**: 自动检测和解析项目配置中的路径别名
 - **测试文件感知**: 跟踪测试文件中的导入，避免误报
+- **LRU 缓存**: 内存高效的缓存系统，支持自动淘汰 (v1.1.0)
+- **增量分析**: 基于文件的缓存加速重复运行，优化的依赖关系图
 - **备份系统**: 在进行更改前自动创建备份
 - **详细模式**: 提供详细的进度和分析信息
 
@@ -104,7 +106,12 @@ dead-code --fix --confirm
   "fix": false,                // 启用自动修复模式
   "verbose": false,            // 启用详细输出
   "maxFileSize": 1000000,      // 最大文件大小（字节），超过此大小的文件将被跳过（默认: 1MB）
-  "concurrency": 50            // 最大并发数（默认: 50）
+  "concurrency": 50,           // 最大并发数（默认: 50）
+  "cache": true,               // 启用持久化缓存（默认: true）
+  "cacheDir": ".dead-code-cache",  // 缓存目录（默认: .dead-code-cache）
+  "cacheMaxAge": 604800000,    // 缓存最大有效期，单位毫秒（默认: 7 天）
+  "maxEntries": 100,           // 最大缓存条目数（默认: 100）
+  "maxMemoryMB": 50            // 缓存最大内存使用量，单位 MB（默认: 50MB）
 }
 ```
 
@@ -280,7 +287,12 @@ dead-code --src ./src --mode ast --ext .js,.vue,.tsx --ignore node_modules,dist 
   "fix": false,
   "verbose": false,
   "maxFileSize": 1000000,
-  "concurrency": 50
+  "concurrency": 50,
+  "cache": true,
+  "cacheDir": ".dead-code-cache",
+  "cacheMaxAge": 604800000,
+  "maxEntries": 100,
+  "maxMemoryMB": 50
 }
 ```
 

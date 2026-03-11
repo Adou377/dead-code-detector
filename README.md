@@ -11,7 +11,8 @@ An efficient dead code detection tool designed for Vue 2/3 and React projects, h
 - **Configuration Flexibility**: `.deadcoderc.json`, `.deadcoderc.js`, and `deadcode.config.js`
 - **Path Alias Support**: Auto-detects and resolves path aliases from project config
 - **Test File Awareness**: Tracks imports from test files to avoid false positives
-- **Persistent Cache**: Incremental analysis with file-based cache for faster re-runs
+- **LRU Cache**: Memory-efficient caching with automatic eviction (v1.1.0)
+- **Incremental Analysis**: File-based cache for faster re-runs with optimized dependency graph
 - **Backup System**: Creates automatic backups before making changes
 - **Verbose Mode**: Detailed progress and analysis information
 
@@ -108,7 +109,9 @@ The tool supports multiple configuration file formats (in priority order):
   "concurrency": 50,           // Maximum concurrency (default: 50)
   "cache": true,               // Enable persistent cache (default: true)
   "cacheDir": ".dead-code-cache",  // Cache directory (default: .dead-code-cache)
-  "cacheMaxAge": 604800000     // Cache max age in ms (default: 7 days)
+  "cacheMaxAge": 604800000,    // Cache max age in ms (default: 7 days)
+  "maxEntries": 100,           // Maximum cache entries (default: 100)
+  "maxMemoryMB": 50            // Maximum memory for cache in MB (default: 50MB)
 }
 ```
 
@@ -304,7 +307,14 @@ dead-code --src ./src --mode ast --ext .js,.vue,.tsx --ignore node_modules,dist 
   "ignoreDirs": ["node_modules", "dist", ".git", "coverage", ".history"],
   "mode": "ast",
   "fix": false,
-  "verbose": false
+  "verbose": false,
+  "maxFileSize": 1000000,
+  "concurrency": 50,
+  "cache": true,
+  "cacheDir": ".dead-code-cache",
+  "cacheMaxAge": 604800000,
+  "maxEntries": 100,
+  "maxMemoryMB": 50
 }
 ```
 

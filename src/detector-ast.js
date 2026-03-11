@@ -68,12 +68,86 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
   }
 
   /**
+   * 注册组件信息
+   * @param {string} relativePath - 相对路径
+   * @param {string} name - 组件名称
+   * @param {Object} options - 组件选项
+   * @private
+   */
+  registerComponent(relativePath, name, options = {}) {
+    this.components.set(relativePath, {
+      name,
+      used: false,
+      isGlobal: name.startsWith('The') || name.startsWith('App'),
+      ...options,
+    });
+  }
+
+  /**
+   * 解析Vue文件
+   * @param {string} filePath - 文件路径
+   * @param {string} relativePath - 相对路径
+   * @param {string} content - 文件内容
+   * @private
+   */
+  async parseVueFile(filePath, relativePath, content) {
+    this.fileContents.set(relativePath, content);
+
+    const vueInfo = parseVueComponent(content);
+    const fileName = path.basename(filePath, '.vue');
+
+    if (vueInfo.isComponent && fileName !== 'index') {
+      this.registerComponent(relativePath, fileName, {
+        isScriptSetup: vueInfo.hasScriptSetup,
+        composables: vueInfo.composables,
+        exposed: vueInfo.exposed,
+      });
+    }
+
+    const result = parse(content, filePath);
+    if (result.success && result.ast) {
+      this.processAstResult(relativePath, result.ast, content);
+    }
+  }
+
+  /**
+   * 解析JavaScript/TypeScript文件
+   * @param {string} filePath - 文件路径
+   * @param {string} relativePath - 相对路径
+   * @param {string} content - 文件内容
+   * @param {string} ext - 文件扩展名
+   * @private
+   */
+  async parseJsTsFile(filePath, relativePath, content, ext) {
+    this.fileContents.set(relativePath, content);
+
+    const result = parse(content, filePath);
+
+    if (result.success && result.ast) {
+      const components = walkComponents(result.ast);
+      const fileName = path.basename(filePath, ext);
+
+      if (components.functions.length > 0 || components.classes.length > 0) {
+        const dirName = path.basename(path.dirname(filePath)).toLowerCase();
+
+        if (!NON_COMPONENT_DIRS.includes(dirName)) {
+          const compName = components.functions[0]?.name || components.classes[0]?.name;
+          if (compName && fileName !== 'index') {
+            this.registerComponent(relativePath, compName);
+          }
+        }
+      }
+
+      this.processAstResult(relativePath, result.ast, content);
+    }
+  }
+
+  /**
    * 解析单个文件使用AST
    * @param {string} filePath - 文件路径
    * @returns {Promise<void>}
    */
   async parseFile(filePath) {
-    // 路径安全检查：确保文件在源目录范围内
     if (!isSafePath(this.srcDir, filePath)) {
       console.warn(`⚠️  路径安全警告: 文件路径超出源目录范围，已跳过: ${filePath}`);
       return;
@@ -82,7 +156,6 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
     try {
       const relativePath = path.relative(this.srcDir, filePath);
       const ext = path.extname(filePath);
-
       const content = await fsPromises.readFile(filePath, 'utf-8');
 
       if (content.length > this.maxFileSize) {
@@ -91,55 +164,9 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
       }
 
       if (ext === '.vue') {
-        this.fileContents.set(relativePath, content);
-      }
-
-      if (ext === '.vue') {
-        const vueInfo = parseVueComponent(content);
-        const fileName = path.basename(filePath, '.vue');
-
-        if (vueInfo.isComponent && fileName !== 'index') {
-          this.components.set(relativePath, {
-            name: fileName,
-            used: false,
-            isGlobal: fileName.startsWith('The') || fileName.startsWith('App'),
-            isScriptSetup: vueInfo.hasScriptSetup,
-            composables: vueInfo.composables,
-            exposed: vueInfo.exposed,
-          });
-        }
-
-        const result = parse(content, filePath);
-        // 区分有脚本块和无脚本块的情况
-        if (result.success && result.ast) {
-          // 有脚本块且解析成功，处理 AST
-          this.processAstResult(relativePath, result.ast, content);
-        }
-        // 纯模板组件（hasScript: false）不需要处理 AST，组件信息已通过 parseVueComponent 获取
+        await this.parseVueFile(filePath, relativePath, content);
       } else if (['.js', '.jsx', '.ts', '.tsx'].includes(ext)) {
-        const result = parse(content, filePath);
-
-        if (result.success && result.ast) {
-          const components = walkComponents(result.ast);
-          const fileName = path.basename(filePath, ext);
-
-          if (components.functions.length > 0 || components.classes.length > 0) {
-            const dirName = path.basename(path.dirname(filePath)).toLowerCase();
-
-            if (!NON_COMPONENT_DIRS.includes(dirName)) {
-              const compName = components.functions[0]?.name || components.classes[0]?.name;
-              if (compName && fileName !== 'index') {
-                this.components.set(relativePath, {
-                  name: compName,
-                  used: false,
-                  isGlobal: fileName.startsWith('The') || fileName.startsWith('App'),
-                });
-              }
-            }
-          }
-
-          this.processAstResult(relativePath, result.ast, content);
-        }
+        await this.parseJsTsFile(filePath, relativePath, content, ext);
       }
     } catch (error) {
       console.warn(`⚠️  解析文件失败: ${filePath}`);
@@ -148,14 +175,12 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
   }
 
   /**
-   * 处理AST结果提取导出和导入
-   * @param {string} relativePath - 相对文件路径
-   * @param {Object} ast - 解析后的AST
-   * @param {string} content - 原始内容
+   * 过滤导出项，排除忽略列表中的导出
+   * @param {Object} exports - 导出对象
+   * @returns {Array} 过滤后的导出数组
+   * @private
    */
-  processAstResult(relativePath, ast, _content) {
-    const exports = walkExports(ast);
-
+  filterExports(exports) {
     const filteredExports = [];
 
     for (const exp of exports.named) {
@@ -180,25 +205,57 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
       }
     }
 
-    if (filteredExports.length > 0) {
-      this.exports.set(relativePath, filteredExports);
-    }
+    return filteredExports;
+  }
 
+  /**
+   * 收集所有导入
+   * @param {Object} ast - AST对象
+   * @returns {Array} 导入数组
+   * @private
+   */
+  collectImports(ast) {
     const imports = walkImports(ast);
-    const allImports = [
+    return [
       ...imports.static,
       ...imports.default,
       ...imports.namespace,
       ...imports.dynamic,
     ];
+  }
 
+  /**
+   * 收集JSX组件使用
+   * @param {Object} ast - AST对象
+   * @returns {Array} 去重后的组件名称数组
+   * @private
+   */
+  collectJsxComponents(ast) {
+    const jsxComponents = walkJSX(ast);
+    return jsxComponents.length > 0 ? [...new Set(jsxComponents)] : [];
+  }
+
+  /**
+   * 处理AST结果提取导出和导入
+   * @param {string} relativePath - 相对文件路径
+   * @param {Object} ast - 解析后的AST
+   * @param {string} content - 原始内容
+   */
+  processAstResult(relativePath, ast, _content) {
+    const exports = walkExports(ast);
+    const filteredExports = this.filterExports(exports);
+
+    if (filteredExports.length > 0) {
+      this.exports.set(relativePath, filteredExports);
+    }
+
+    const allImports = this.collectImports(ast);
     if (allImports.length > 0) {
       this.imports.set(relativePath, allImports);
     }
 
-    const jsxComponents = walkJSX(ast);
-    if (jsxComponents.length > 0) {
-      const uniqueComponents = [...new Set(jsxComponents)];
+    const uniqueComponents = this.collectJsxComponents(ast);
+    if (uniqueComponents.length > 0) {
       this.jsxUsage.set(relativePath, uniqueComponents);
     }
   }
@@ -368,10 +425,7 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
     }
 
     if (componentInfo) {
-      this.components.set(relativePath, {
-        name: componentInfo.name,
-        used: false,
-        isGlobal: componentInfo.isGlobal,
+      this.registerComponent(relativePath, componentInfo.name, {
         isScriptSetup: componentInfo.isScriptSetup,
         composables: componentInfo.composables,
         exposed: componentInfo.exposed,
@@ -645,6 +699,13 @@ class DeadCodeFinderAST extends DeadCodeFinderBase {
     );
   }
 
+  /**
+   * 自动修复未使用的代码
+   * @param {Object} options - 修复选项
+   * @param {boolean} [options.dryRun=false] - 是否为预览模式（不执行实际修改）
+   * @param {boolean} [options.confirm=false] - 是否需要用户确认
+   * @returns {Promise<Object>} 修复结果，包含各类型修复数量或取消状态
+   */
   async fix(options = {}) {
     const { dryRun = false, confirm: needConfirm = false } = options;
 

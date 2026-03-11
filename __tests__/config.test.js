@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { loadConfig, mergeConfig, validateConfig } = require('../src/config.js');
+const { loadConfig, mergeConfig, validateConfig, CONFIG_LIMITS } = require('../src/config.js');
 
 describe('Config Module', () => {
   describe('loadConfig', () => {
@@ -156,30 +156,64 @@ describe('Config Module', () => {
       expect(() => validateConfig(config)).not.toThrow();
     });
 
-    test('应该在 srcDir 不存在时抛出错误', () => {
-      const config = {
-        srcDir: '/non/existent/directory',
-      };
-
-      expect(() => validateConfig(config)).toThrow('srcDir: 目录不存在');
+    test('应该拒绝非对象参数', () => {
+      expect(() => validateConfig(null)).toThrow('配置选项必须是一个对象');
+      expect(() => validateConfig('string')).toThrow('配置选项必须是一个对象');
+      expect(() => validateConfig(123)).toThrow('配置选项必须是一个对象');
     });
 
-    test('应该在 extensions 不是数组时抛出错误', () => {
-      const config = {
-        srcDir: process.cwd(),
-        extensions: 'not-an-array',
-      };
+    describe('srcDir 验证', () => {
+      test('应该接受有效的相对路径', () => {
+        expect(() => validateConfig({ srcDir: './src' })).not.toThrow();
+        expect(() => validateConfig({ srcDir: 'src' })).not.toThrow();
+      });
 
-      expect(() => validateConfig(config)).toThrow('extensions: 必须是数组');
+      test('应该接受有效的绝对路径', () => {
+        expect(() => validateConfig({ srcDir: process.cwd() })).not.toThrow();
+      });
+
+      test('应该拒绝空字符串', () => {
+        expect(() => validateConfig({ srcDir: '' })).toThrow('srcDir: 必须是非空字符串');
+        expect(() => validateConfig({ srcDir: '   ' })).toThrow('srcDir: 必须是非空字符串');
+      });
+
+      test('应该拒绝非字符串类型', () => {
+        expect(() => validateConfig({ srcDir: 123 })).toThrow('srcDir: 必须是非空字符串');
+        expect(() => validateConfig({ srcDir: null })).toThrow('srcDir: 必须是非空字符串');
+        expect(() => validateConfig({ srcDir: {} })).toThrow('srcDir: 必须是非空字符串');
+      });
+
+      test('应该拒绝包含空字符的路径', () => {
+        expect(() => validateConfig({ srcDir: '/src\0malicious' })).toThrow('srcDir: 包含非法字符');
+      });
+
+      test('应该在 srcDir 不存在时抛出错误', () => {
+        const config = {
+          srcDir: '/non/existent/directory',
+        };
+
+        expect(() => validateConfig(config)).toThrow('srcDir: 目录不存在');
+      });
     });
 
-    test('应该在扩展名不以点开头时抛出错误', () => {
-      const config = {
-        srcDir: process.cwd(),
-        extensions: ['js', '.ts'],
-      };
+    describe('extensions 验证', () => {
+      test('应该在 extensions 不是数组时抛出错误', () => {
+        const config = {
+          srcDir: process.cwd(),
+          extensions: 'not-an-array',
+        };
 
-      expect(() => validateConfig(config)).toThrow('extensions: 扩展名必须以 "." 开头');
+        expect(() => validateConfig(config)).toThrow('extensions: 必须是数组');
+      });
+
+      test('应该在扩展名不以点开头时抛出错误', () => {
+        const config = {
+          srcDir: process.cwd(),
+          extensions: ['js', '.ts'],
+        };
+
+        expect(() => validateConfig(config)).toThrow('extensions: 扩展名必须以 "." 开头');
+      });
     });
 
     test('应该在 ignoreDirs 不是数组时抛出错误', () => {
@@ -200,31 +234,48 @@ describe('Config Module', () => {
       expect(() => validateConfig(config)).toThrow('mode: 必须是 "ast" 或 "regex"');
     });
 
-    test('应该在 maxFileSize 不是正整数时抛出错误', () => {
-      const config = {
-        srcDir: process.cwd(),
-        maxFileSize: -100,
-      };
+    describe('maxFileSize 验证', () => {
+      test('应该接受有效范围内的文件大小', () => {
+        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: 0 })).not.toThrow();
+        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: 1000000 })).not.toThrow();
+        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: CONFIG_LIMITS.MAX_FILE_SIZE_10MB })).not.toThrow();
+      });
 
-      expect(() => validateConfig(config)).toThrow('maxFileSize: 必须是正整数');
+      test('应该拒绝负数文件大小', () => {
+        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: -1 })).toThrow('maxFileSize: 必须在 0 到 10MB 之间');
+      });
+
+      test('应该拒绝超过 10MB 的文件大小', () => {
+        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: CONFIG_LIMITS.MAX_FILE_SIZE_10MB + 1 })).toThrow('maxFileSize: 必须在 0 到 10MB 之间');
+      });
+
+      test('应该拒绝非数字类型', () => {
+        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: '1000000' })).toThrow('maxFileSize: 必须是数字');
+        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: NaN })).toThrow('maxFileSize: 必须是数字');
+      });
     });
 
-    test('应该在 maxFileSize 不是整数时抛出错误', () => {
-      const config = {
-        srcDir: process.cwd(),
-        maxFileSize: 1.5,
-      };
+    describe('concurrency 验证', () => {
+      test('应该接受有效范围内的并发数', () => {
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: 1 })).not.toThrow();
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: 50 })).not.toThrow();
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: CONFIG_LIMITS.MAX_CONCURRENCY })).not.toThrow();
+      });
 
-      expect(() => validateConfig(config)).toThrow('maxFileSize: 必须是正整数');
-    });
+      test('应该拒绝小于 1 的并发数', () => {
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: 0 })).toThrow('concurrency: 必须在 1 到 1000 之间');
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: -1 })).toThrow('concurrency: 必须在 1 到 1000 之间');
+      });
 
-    test('应该在 concurrency 不是正整数时抛出错误', () => {
-      const config = {
-        srcDir: process.cwd(),
-        concurrency: 0,
-      };
+      test('应该拒绝大于 1000 的并发数', () => {
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: CONFIG_LIMITS.MAX_CONCURRENCY + 1 })).toThrow('concurrency: 必须在 1 到 1000 之间');
+      });
 
-      expect(() => validateConfig(config)).toThrow('concurrency: 必须是正整数');
+      test('应该拒绝非整数并发数', () => {
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: 1.5 })).toThrow('concurrency: 必须是整数');
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: '50' })).toThrow('concurrency: 必须是整数');
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: null })).toThrow('concurrency: 必须是整数');
+      });
     });
 
     test('应该收集多个验证错误', () => {
@@ -243,9 +294,14 @@ describe('Config Module', () => {
         expect(error.message).toContain('srcDir: 目录不存在');
         expect(error.message).toContain('extensions: 扩展名必须以 "." 开头');
         expect(error.message).toContain('mode: 必须是 "ast" 或 "regex"');
-        expect(error.message).toContain('maxFileSize: 必须是正整数');
-        expect(error.message).toContain('concurrency: 必须是正整数');
+        expect(error.message).toContain('maxFileSize: 必须在 0 到 10MB 之间');
+        expect(error.message).toContain('concurrency: 必须在 1 到 1000 之间');
       }
+    });
+
+    test('应该忽略未定义的参数', () => {
+      expect(() => validateConfig({ srcDir: process.cwd(), concurrency: undefined })).not.toThrow();
+      expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: undefined })).not.toThrow();
     });
   });
 });

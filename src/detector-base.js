@@ -13,7 +13,102 @@ const { normalizePath, isSafePath, hasPathTraversal } = require('./utils.js');
 const { PathResolver } = require('./resolver.js');
 const { ComponentDetector } = require('./component-detector.js');
 
+/**
+ * 正则表达式缓存工厂
+ * 避免重复编译相同的正则表达式模式
+ */
+class RegexCache {
+  /**
+   * 创建正则表达式缓存实例
+   */
+  constructor() {
+    this.cache = new Map();
+  }
+
+  /**
+   * 获取或创建正则表达式
+   * @param {string|RegExp} pattern - 正则表达式模式
+   * @param {string} [flags='g'] - 正则表达式标志
+   * @returns {RegExp} 正则表达式实例
+   */
+  get(pattern, flags = 'g') {
+    const key = `${pattern.toString()}:${flags}`;
+    if (!this.cache.has(key)) {
+      this.cache.set(key, new RegExp(pattern, flags));
+    }
+    const regex = this.cache.get(key);
+    regex.lastIndex = 0;
+    return regex;
+  }
+
+  /**
+   * 获取或创建针对特定名称的正则表达式
+   * @param {string} name - 要匹配的名称
+   * @param {string} type - 正则类型（export-group, export-decl, var-decl, decorator, name）
+   * @returns {RegExp} 正则表达式实例
+   */
+  getForName(name, type) {
+    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const key = `${type}:${escapedName}`;
+    if (!this.cache.has(key)) {
+      switch (type) {
+        case 'export-group':
+          this.cache.set(key, new RegExp(`export\\s+\\{[^}]*\\b${escapedName}\\b[^}]*\\}`, 'g'));
+          break;
+        case 'export-decl':
+          this.cache.set(key, new RegExp(`export\\s+(?:const|let|var|function|class)\\s+${escapedName}\\b[^;]*;?`, 'g'));
+          break;
+        case 'var-decl':
+          this.cache.set(key, new RegExp(`\\b(?:const|let|var|function|class)\\s+${escapedName}\\b`, 'g'));
+          break;
+        case 'decorator':
+          this.cache.set(key, new RegExp(`^\\s*@${escapedName}(?:\\s*\\([^)]*\\))?`, 'gm'));
+          break;
+        case 'name':
+          this.cache.set(key, new RegExp(`\\b${escapedName}\\b`, 'g'));
+          break;
+        default:
+          this.cache.set(key, new RegExp(escapedName, flags));
+      }
+    }
+    const regex = this.cache.get(key);
+    regex.lastIndex = 0;
+    return regex;
+  }
+
+  /**
+   * 清空缓存
+   */
+  clear() {
+    this.cache.clear();
+  }
+}
+
+const globalRegexCache = new RegexCache();
+
+const PRECOMPILED_REGEX = {
+  cleanImportStatements: /import\s+.*from\s+['"][^'"]+['"]/g,
+  cleanStringLiterals: /(['"`])(?:\\.|(?!\1)[^\\])*\1/g,
+  cleanRegex: /\/(?:[^\/\\]|\\.)*\/[gimsuvy]*/g,
+  cleanCommentsBlock: /\/\*[\s\S]*?\*\//g,
+  cleanCommentsLine: /\/\/.*$/gm,
+};
+
+/**
+ * 死代码检测器基类
+ * 提供文件扫描、导入解析、使用计数等通用功能
+ */
 class DeadCodeFinderBase {
+  /**
+   * 创建检测器基类实例
+   * @param {Object} options - 配置选项
+   * @param {string} [options.srcDir] - 源代码目录路径
+   * @param {string[]} [options.extensions] - 要扫描的文件扩展名
+   * @param {string[]} [options.ignoreDirs] - 要忽略的目录
+   * @param {boolean} [options.verbose] - 是否输出详细日志
+   * @param {number} [options.maxFileSize] - 最大文件大小（字节）
+   * @param {number} [options.concurrency] - 并发处理数
+   */
   constructor(options = {}) {
     this.srcDir = options.srcDir || path.join(process.cwd(), 'src');
     this.extensions = options.extensions || DEFAULT_EXTENSIONS;
@@ -190,12 +285,12 @@ class DeadCodeFinderBase {
    */
   cleanContent(content, escapedName) {
     let cleaned = content;
-    cleaned = this.cleanComments(cleaned);
-    cleaned = this.cleanImportStatements(cleaned);
-    cleaned = this.cleanStringLiterals(cleaned);
-    cleaned = this.cleanRegex(cleaned);
-    cleaned = this.cleanExportDeclarations(cleaned, escapedName);
-    cleaned = this.cleanVariableDeclarations(cleaned, escapedName);
+    cleaned = this.cleanCommentsFast(cleaned);
+    cleaned = this.cleanImportStatementsFast(cleaned);
+    cleaned = this.cleanStringLiteralsFast(cleaned);
+    cleaned = this.cleanRegexFast(cleaned);
+    cleaned = this.cleanExportDeclarationsFast(cleaned, escapedName);
+    cleaned = this.cleanVariableDeclarationsFast(cleaned, escapedName);
     return cleaned;
   }
 
@@ -215,107 +310,102 @@ class DeadCodeFinderBase {
    * @returns {number} 使用次数
    */
   countUsageInContent(content, name) {
-    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&amp;');
-    const cleanedContent = this.cleanContent(content, escapedName);
-
-    const decoratorMatches = this.findDecoratorUsage(cleanedContent, escapedName);
-    const nameMatches = this.findNameUsage(cleanedContent, escapedName);
-
+    const cleanedContent = this.cleanContent(content, name);
+    const decoratorMatches = this.findDecoratorUsageFast(cleanedContent, name);
+    const nameMatches = this.findNameUsageFast(cleanedContent, name);
     return this.countMatches(nameMatches) + this.countMatches(decoratorMatches);
   }
 
   /**
-   * 清除导出声明
+   * 清除导出声明（使用预编译正则）
    * @param {string} content - 内容
-   * @param {string} escapedName - 转义后的名称
+   * @param {string} name - 名称
    * @returns {string} 清除后的内容
    */
-  cleanExportDeclarations(content, escapedName) {
+  cleanExportDeclarationsFast(content, name) {
     let cleaned = content;
-    cleaned = cleaned.replace(
-      new RegExp(`export\\s+\\{[^}]*\\b${escapedName}\\b[^}]*\\}`, 'g'),
-      ''
-    );
-    cleaned = cleaned.replace(
-      new RegExp(`export\\s+(?:const|let|var|function|class)\\s+${escapedName}\\b[^;]*;?`, 'g'),
-      ''
-    );
+    const exportGroupRegex = globalRegexCache.getForName(name, 'export-group');
+    cleaned = cleaned.replace(exportGroupRegex, '');
+    const exportDeclRegex = globalRegexCache.getForName(name, 'export-decl');
+    cleaned = cleaned.replace(exportDeclRegex, '');
     return cleaned;
   }
 
   /**
-   * 清除变量声明
+   * 清除变量声明（使用预编译正则）
    * @param {string} content - 内容
-   * @param {string} escapedName - 转义后的名称
+   * @param {string} name - 名称
    * @returns {string} 清除后的内容
    */
-  cleanVariableDeclarations(content, escapedName) {
+  cleanVariableDeclarationsFast(content, name) {
+    const varDeclRegex = globalRegexCache.getForName(name, 'var-decl');
+    return content.replace(varDeclRegex, '');
+  }
+
+  /**
+   * 清除导入语句（使用预编译正则）
+   * @param {string} content - 内容
+   * @returns {string} 清除后的内容
+   */
+  cleanImportStatementsFast(content) {
+    PRECOMPILED_REGEX.cleanImportStatements.lastIndex = 0;
+    return content.replace(PRECOMPILED_REGEX.cleanImportStatements, '');
+  }
+
+  /**
+   * 清除字符串字面量（使用预编译正则）
+   * @param {string} content - 内容
+   * @returns {string} 清除后的内容
+   */
+  cleanStringLiteralsFast(content) {
+    PRECOMPILED_REGEX.cleanStringLiterals.lastIndex = 0;
+    return content.replace(PRECOMPILED_REGEX.cleanStringLiterals, '');
+  }
+
+  /**
+   * 清除正则表达式（使用预编译正则）
+   * @param {string} content - 内容
+   * @returns {string} 清除后的内容
+   */
+  cleanRegexFast(content) {
+    PRECOMPILED_REGEX.cleanRegex.lastIndex = 0;
+    return content.replace(PRECOMPILED_REGEX.cleanRegex, '');
+  }
+
+  /**
+   * 清除注释（使用预编译正则）
+   * @param {string} content - 内容
+   * @returns {string} 清除后的内容
+   */
+  cleanCommentsFast(content) {
     let cleaned = content;
-    cleaned = cleaned.replace(
-      new RegExp(`\\b(?:const|let|var|function|class)\\s+${escapedName}\\b`, 'g'),
-      ''
-    );
+    PRECOMPILED_REGEX.cleanCommentsBlock.lastIndex = 0;
+    cleaned = cleaned.replace(PRECOMPILED_REGEX.cleanCommentsBlock, '');
+    PRECOMPILED_REGEX.cleanCommentsLine.lastIndex = 0;
+    cleaned = cleaned.replace(PRECOMPILED_REGEX.cleanCommentsLine, '');
     return cleaned;
   }
 
   /**
-   * 清除导入语句
+   * 查找装饰器使用（使用缓存正则）
    * @param {string} content - 内容
-   * @returns {string} 清除后的内容
-   */
-  cleanImportStatements(content) {
-    return content.replace(/import\s+.*from\s+['"][^'"]+['"]/g, '');
-  }
-
-  /**
-   * 清除字符串字面量
-   * @param {string} content - 内容
-   * @returns {string} 清除后的内容
-   */
-  cleanStringLiterals(content) {
-    return content.replace(/(['"`])(?:\\.|(?!\1)[^\\])*\1/g, '');
-  }
-
-  /**
-   * 清除正则表达式
-   * @param {string} content - 内容
-   * @returns {string} 清除后的内容
-   */
-  cleanRegex(content) {
-    return content.replace(/\/(?:[^\/\\]|\\.)*\/[gimsuvy]*/g, '');
-  }
-
-  /**
-   * 清除注释
-   * @param {string} content - 内容
-   * @returns {string} 清除后的内容
-   */
-  cleanComments(content) {
-    let cleaned = content;
-    cleaned = cleaned.replace(/\/\*[\s\S]*?\*\//g, '');
-    cleaned = cleaned.replace(/\/\/.*$/gm, '');
-    return cleaned;
-  }
-
-  /**
-   * 查找装饰器使用
-   * @param {string} content - 内容
-   * @param {string} escapedName - 转义后的名称
+   * @param {string} name - 名称
    * @returns {RegExpMatchArray|null} 匹配结果
    */
-  findDecoratorUsage(content, escapedName) {
-    const decoratorPattern = new RegExp(`^\\s*@${escapedName}(?:\\s*\\([^)]*\\))?`, 'gm');
-    return content.match(decoratorPattern);
+  findDecoratorUsageFast(content, name) {
+    const decoratorRegex = globalRegexCache.getForName(name, 'decorator');
+    return content.match(decoratorRegex);
   }
 
   /**
-   * 查找名称使用
+   * 查找名称使用（使用缓存正则）
    * @param {string} content - 内容
-   * @param {string} escapedName - 转义后的名称
+   * @param {string} name - 名称
    * @returns {RegExpMatchArray|null} 匹配结果
    */
-  findNameUsage(content, escapedName) {
-    return content.match(new RegExp(`\\b${escapedName}\\b`, 'g'));
+  findNameUsageFast(content, name) {
+    const nameRegex = globalRegexCache.getForName(name, 'name');
+    return content.match(nameRegex);
   }
 
   /**
@@ -397,6 +487,12 @@ class DeadCodeFinderBase {
     return unusedToolFiles;
   }
 
+  /**
+   * 解析导入路径为相对路径
+   * @param {string} importPath - 导入路径
+   * @param {string} currentFile - 当前文件路径
+   * @returns {string|null} 解析后的相对路径，解析失败返回 null
+   */
   resolveImportPath(importPath, currentFile) {
     return this.pathResolver.resolve(importPath, currentFile);
   }

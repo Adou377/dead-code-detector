@@ -8,11 +8,252 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { defaultLogger } = require('./logger');
+const { readJsonFile, readFileBuffer } = require('./utils');
 
 const DEFAULT_CACHE_DIR = '.dead-code-cache';
 const DEFAULT_CACHE_FILE = 'analysis-cache.json';
 const DEFAULT_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_MAX_ENTRIES = 100;
+const DEFAULT_MAX_MEMORY_MB = 50;
+const DEFAULT_MEMORY_CHECK_INTERVAL = 100;
+
+class LRUNode {
+  constructor(key, value) {
+    this.key = key;
+    this.value = value;
+    this.prev = null;
+    this.next = null;
+    this.size = 0;
+    this.lastAccessedAt = Date.now();
+  }
+}
+
+class LRUCache {
+  constructor(options = {}) {
+    this.maxSize = options.maxSize !== undefined ? options.maxSize : DEFAULT_MAX_ENTRIES;
+    this.maxMemoryBytes = (options.maxMemoryMB || DEFAULT_MAX_MEMORY_MB) * 1024 * 1024;
+    this.memoryCheckInterval = options.memoryCheckInterval || DEFAULT_MEMORY_CHECK_INTERVAL;
+    this.currentSize = 0;
+    this.currentMemoryBytes = 0;
+    this.cache = new Map();
+    this.head = null;
+    this.tail = null;
+    this.evictions = 0;
+    this.memoryEvictions = 0;
+    this.accessCount = 0;
+  }
+
+  get(key) {
+    const node = this.cache.get(key);
+    if (!node) {
+      return null;
+    }
+    this._moveToHead(node);
+    node.lastAccessedAt = Date.now();
+    this.accessCount++;
+    if (this.accessCount % this.memoryCheckInterval === 0) {
+      this._checkMemoryThreshold();
+    }
+    return node.value;
+  }
+
+  set(key, value, size = 0) {
+    if (this.maxSize <= 0) {
+      return;
+    }
+    
+    let node = this.cache.get(key);
+    const entrySize = this._calculateEntrySize(key, value, size);
+    
+    if (node) {
+      this.currentMemoryBytes -= node.size;
+      node.value = value;
+      node.size = entrySize;
+      node.lastAccessedAt = Date.now();
+      this._moveToHead(node);
+    } else {
+      while (this.cache.size >= this.maxSize && this.cache.size > 0) {
+        this._evictTail();
+      }
+      node = new LRUNode(key, value);
+      node.size = entrySize;
+      this.cache.set(key, node);
+      this._addToHead(node);
+      this.currentSize++;
+    }
+    
+    this.currentMemoryBytes += entrySize;
+    this._checkMemoryThreshold();
+  }
+
+  has(key) {
+    return this.cache.has(key);
+  }
+
+  delete(key) {
+    const node = this.cache.get(key);
+    if (!node) {
+      return false;
+    }
+    this._removeNode(node);
+    this.cache.delete(key);
+    this.currentMemoryBytes -= node.size;
+    this.currentSize--;
+    return true;
+  }
+
+  clear() {
+    this.cache.clear();
+    this.head = null;
+    this.tail = null;
+    this.currentSize = 0;
+    this.currentMemoryBytes = 0;
+    this.evictions = 0;
+    this.memoryEvictions = 0;
+  }
+
+  keys() {
+    const keys = [];
+    let current = this.head;
+    while (current) {
+      keys.push(current.key);
+      current = current.next;
+    }
+    return keys;
+  }
+
+  values() {
+    const values = [];
+    let current = this.head;
+    while (current) {
+      values.push(current.value);
+      current = current.next;
+    }
+    return values;
+  }
+
+  entries() {
+    const entries = [];
+    let current = this.head;
+    while (current) {
+      entries.push([current.key, current.value]);
+      current = current.next;
+    }
+    return entries;
+  }
+
+  forEach(callback) {
+    let current = this.head;
+    while (current) {
+      callback(current.value, current.key, this);
+      current = current.next;
+    }
+  }
+
+  get size() {
+    return this.cache.size;
+  }
+
+  getMemoryUsage() {
+    return {
+      currentBytes: this.currentMemoryBytes,
+      currentMB: (this.currentMemoryBytes / (1024 * 1024)).toFixed(2),
+      maxBytes: this.maxMemoryBytes,
+      maxMB: this.maxMemoryBytes / (1024 * 1024),
+      utilizationPercent: ((this.currentMemoryBytes / this.maxMemoryBytes) * 100).toFixed(2),
+    };
+  }
+
+  getStats() {
+    return {
+      size: this.cache.size,
+      maxSize: this.maxSize,
+      memoryUsage: this.getMemoryUsage(),
+      evictions: this.evictions,
+      memoryEvictions: this.memoryEvictions,
+    };
+  }
+
+  resize(newMaxSize) {
+    this.maxSize = newMaxSize;
+    while (this.cache.size > this.maxSize && this.tail) {
+      this._evictTail();
+    }
+  }
+
+  setMaxMemory(maxMemoryMB) {
+    this.maxMemoryBytes = maxMemoryMB * 1024 * 1024;
+    this._checkMemoryThreshold();
+  }
+
+  _addToHead(node) {
+    node.prev = null;
+    node.next = this.head;
+    if (this.head) {
+      this.head.prev = node;
+    }
+    this.head = node;
+    if (!this.tail) {
+      this.tail = node;
+    }
+  }
+
+  _removeNode(node) {
+    if (node.prev) {
+      node.prev.next = node.next;
+    } else {
+      this.head = node.next;
+    }
+    if (node.next) {
+      node.next.prev = node.prev;
+    } else {
+      this.tail = node.prev;
+    }
+    node.prev = null;
+    node.next = null;
+  }
+
+  _moveToHead(node) {
+    this._removeNode(node);
+    this._addToHead(node);
+  }
+
+  _evictTail() {
+    if (!this.tail) {
+      return null;
+    }
+    const evictedNode = this.tail;
+    this._removeNode(evictedNode);
+    this.cache.delete(evictedNode.key);
+    this.currentMemoryBytes -= evictedNode.size;
+    this.currentSize--;
+    this.evictions++;
+    defaultLogger.debug(`LRU 淘汰缓存条目: ${evictedNode.key}`);
+    return evictedNode;
+  }
+
+  _checkMemoryThreshold() {
+    while (this.currentMemoryBytes > this.maxMemoryBytes && this.tail) {
+      this._evictTail();
+      this.memoryEvictions++;
+    }
+  }
+
+  _calculateEntrySize(key, value, providedSize) {
+    if (providedSize > 0) {
+      return providedSize;
+    }
+    let size = 0;
+    try {
+      size = Buffer.byteLength(JSON.stringify(key), 'utf8');
+      size += Buffer.byteLength(JSON.stringify(value), 'utf8');
+      size += 200;
+    } catch {
+      size = 1024;
+    }
+    return size;
+  }
+}
 
 class CacheManager {
   constructor(options = {}) {
@@ -20,6 +261,7 @@ class CacheManager {
     this.cacheFile = options.cacheFile || DEFAULT_CACHE_FILE;
     this.maxAge = options.maxAge || DEFAULT_MAX_AGE;
     this.maxEntries = options.maxEntries || DEFAULT_MAX_ENTRIES;
+    this.maxMemoryMB = options.maxMemoryMB || DEFAULT_MAX_MEMORY_MB;
     this.projectRoot = options.projectRoot || process.cwd();
     this.cachePath = path.join(this.projectRoot, this.cacheDir, this.cacheFile);
     this.cache = null;
@@ -27,6 +269,12 @@ class CacheManager {
     this.hits = 0;
     this.misses = 0;
     this.dependencyGraph = new Map();
+    this.lruCache = new LRUCache({
+      maxSize: this.maxEntries,
+      maxMemoryMB: this.maxMemoryMB,
+      memoryCheckInterval: options.memoryCheckInterval || DEFAULT_MEMORY_CHECK_INTERVAL,
+    });
+    this.useLRU = options.useLRU !== false;
   }
 
   load() {
@@ -41,14 +289,16 @@ class CacheManager {
         return this.cache;
       }
 
-      const content = fs.readFileSync(this.cachePath, 'utf-8');
-      const parsed = JSON.parse(content);
+      const result = readJsonFile(this.cachePath);
+      if (!result.success) {
+        throw result.error;
+      }
 
-      if (!this._validateCacheFormat(parsed)) {
+      if (!this._validateCacheFormat(result.data)) {
         defaultLogger.warn('缓存文件格式无效，将创建新缓存');
         this.cache = this._createEmptyCache();
       } else {
-        this.cache = parsed;
+        this.cache = result.data;
         this._cleanExpiredEntries();
       }
 
@@ -91,6 +341,19 @@ class CacheManager {
     }
 
     const normalizedPath = this._normalizePath(filePath);
+    
+    if (this.useLRU && this.lruCache.has(normalizedPath)) {
+      const cachedEntry = this.lruCache.get(normalizedPath);
+      if (cachedEntry && this._isEntryValid(normalizedPath, cachedEntry)) {
+        this.hits++;
+        if (this.cache.files[normalizedPath]) {
+          this.cache.files[normalizedPath].lastAccessedAt = Date.now();
+        }
+        return cachedEntry.data;
+      }
+      this.lruCache.delete(normalizedPath);
+    }
+
     const entry = this.cache.files[normalizedPath];
 
     if (!entry) {
@@ -106,6 +369,12 @@ class CacheManager {
 
     this.hits++;
     this._updateAccessTime(normalizedPath);
+    
+    if (this.useLRU) {
+      const entrySize = this._calculateEntrySize(normalizedPath, entry);
+      this.lruCache.set(normalizedPath, entry, entrySize);
+    }
+    
     return entry.data;
   }
 
@@ -143,6 +412,12 @@ class CacheManager {
       };
     }
 
+    if (this.useLRU) {
+      const entry = this.cache.files[normalizedPath];
+      const entrySize = this._calculateEntrySize(normalizedPath, entry);
+      this.lruCache.set(normalizedPath, entry, entrySize);
+    }
+
     this.cache.meta.totalFiles = Object.keys(this.cache.files).length;
     return true;
   }
@@ -158,12 +433,20 @@ class CacheManager {
       this.cache.meta.totalFiles = Object.keys(this.cache.files).length;
     }
 
+    if (this.useLRU) {
+      this.lruCache.delete(normalizedPath);
+    }
+
     return true;
   }
 
   clear() {
     this.cache = this._createEmptyCache();
     this.loaded = true;
+
+    if (this.useLRU) {
+      this.lruCache.clear();
+    }
 
     try {
       if (fs.existsSync(this.cachePath)) {
@@ -207,7 +490,7 @@ class CacheManager {
       }
     }
 
-    return {
+    const stats = {
       totalFiles: files.length,
       totalSize,
       oldestEntry: oldestTimestamp === Infinity ? null : new Date(oldestTimestamp),
@@ -217,6 +500,33 @@ class CacheManager {
       misses: this.misses,
       hitRate: this.getHitRate(),
     };
+
+    if (this.useLRU) {
+      stats.lru = this.lruCache.getStats();
+    }
+
+    return stats;
+  }
+
+  getMemoryUsage() {
+    if (!this.useLRU) {
+      return null;
+    }
+    return this.lruCache.getMemoryUsage();
+  }
+
+  setMaxMemory(maxMemoryMB) {
+    this.maxMemoryMB = maxMemoryMB;
+    if (this.useLRU) {
+      this.lruCache.setMaxMemory(maxMemoryMB);
+    }
+  }
+
+  resizeCache(newMaxSize) {
+    this.maxEntries = newMaxSize;
+    if (this.useLRU) {
+      this.lruCache.resize(newMaxSize);
+    }
   }
 
   getAge(filePath) {
@@ -380,12 +690,11 @@ class CacheManager {
   }
 
   _computeFileHash(filePath) {
-    try {
-      const content = fs.readFileSync(filePath);
-      return crypto.createHash('md5').update(content).digest('hex');
-    } catch {
+    const result = readFileBuffer(filePath);
+    if (!result.success) {
       return null;
     }
+    return crypto.createHash('md5').update(result.content).digest('hex');
   }
 
   _isEntryValid(filePath, entry) {
@@ -473,6 +782,18 @@ class CacheManager {
       entry.lastAccessedAt = Date.now();
     }
   }
+
+  _calculateEntrySize(key, entry) {
+    let size = 0;
+    try {
+      size = Buffer.byteLength(JSON.stringify(key), 'utf8');
+      size += Buffer.byteLength(JSON.stringify(entry), 'utf8');
+      size += 200;
+    } catch {
+      size = 1024;
+    }
+    return size;
+  }
 }
 
 function createCacheManager(options = {}) {
@@ -481,9 +802,12 @@ function createCacheManager(options = {}) {
 
 module.exports = {
   CacheManager,
+  LRUCache,
   createCacheManager,
   DEFAULT_CACHE_DIR,
   DEFAULT_CACHE_FILE,
   DEFAULT_MAX_AGE,
   DEFAULT_MAX_ENTRIES,
+  DEFAULT_MAX_MEMORY_MB,
+  DEFAULT_MEMORY_CHECK_INTERVAL,
 };
