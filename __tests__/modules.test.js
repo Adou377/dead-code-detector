@@ -511,7 +511,7 @@ describe('fixer.js', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
       removeUnusedExports(testFile, [{ name: 'foo', line: 100 }]);
       consoleSpy.mockRestore();
-      
+
       const content = fs.readFileSync(testFile, 'utf-8');
       expect(content).toBe('original content');
     });

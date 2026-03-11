@@ -95,7 +95,7 @@ graph TB
     API --> Incremental
 
     Config --> Constants
-    
+
     AST --> Base
     Regex --> Base
     Base --> Resolver
@@ -183,13 +183,13 @@ const result = await detect({ srcDir: './src', mode: 'ast' });
 
 检测器基类，提供公共功能：
 
-| 方法 | 说明 |
-|------|------|
-| `scanFiles(dir)` | 扫描目录获取源文件 |
-| `scanTestFiles()` | 扫描测试文件 |
-| `countLocalUsage(file, name)` | 计算本地使用次数 |
-| `detectUnusedToolFiles()` | 检测未使用的工具文件 |
-| `resolveImportPath(importPath, currentFile)` | 解析导入路径 |
+| 方法                                         | 说明                 |
+| -------------------------------------------- | -------------------- |
+| `scanFiles(dir)`                             | 扫描目录获取源文件   |
+| `scanTestFiles()`                            | 扫描测试文件         |
+| `countLocalUsage(file, name)`                | 计算本地使用次数     |
+| `detectUnusedToolFiles()`                    | 检测未使用的工具文件 |
+| `resolveImportPath(importPath, currentFile)` | 解析导入路径         |
 
 #### [detector-ast.js](../src/detector-ast.js)
 
@@ -223,12 +223,12 @@ const result = parse(content, filePath);
 
 AST 遍历工具，提供以下遍历函数：
 
-| 函数 | 说明 |
-|------|------|
-| `walkExports(ast)` | 遍历并收集所有导出 |
-| `walkImports(ast)` | 遍历并收集所有导入 |
-| `walkJSX(ast)` | 遍历并收集 JSX 组件使用 |
-| `walkComponents(ast)` | 遍历并收集组件声明 |
+| 函数                  | 说明                    |
+| --------------------- | ----------------------- |
+| `walkExports(ast)`    | 遍历并收集所有导出      |
+| `walkImports(ast)`    | 遍历并收集所有导入      |
+| `walkJSX(ast)`        | 遍历并收集 JSX 组件使用 |
+| `walkComponents(ast)` | 遍历并收集组件声明      |
 
 #### [parser/vue.js](../src/parser/vue.js)
 
@@ -313,13 +313,13 @@ sequenceDiagram
     CLI->>Config: 加载配置
     Config-->>CLI: 返回配置对象
     CLI->>Detector: 创建检测器实例
-    
+
     rect rgb(240, 248, 255)
         Note over Detector,Parser: 文件扫描阶段
         Detector->>Detector: scanFiles() 扫描源文件
         Detector->>Detector: scanTestFiles() 扫描测试文件
     end
-    
+
     rect rgb(255, 248, 240)
         Note over Detector,Walker: 文件解析阶段
         loop 每个源文件
@@ -330,7 +330,7 @@ sequenceDiagram
             Parser-->>Detector: 存储解析结果
         end
     end
-    
+
     rect rgb(240, 255, 240)
         Note over Detector,Resolver: 分析检测阶段
         Detector->>Resolver: 解析导入路径
@@ -339,7 +339,7 @@ sequenceDiagram
         Detector->>Detector: detectUnusedComponents()
         Detector->>Detector: detectUnusedToolFiles()
     end
-    
+
     rect rgb(255, 240, 255)
         Note over Detector,Reporter: 报告输出阶段
         Detector->>Reporter: generate(results)
@@ -428,7 +428,7 @@ flowchart LR
     C --> D[确定受影响文件]
     D --> E[过滤分析结果]
     E --> F[输出增量报告]
-    
+
     G[缓存系统] --> H[读取缓存]
     H --> I[命中缓存?]
     I -->|是| J[复用结果]
@@ -466,12 +466,12 @@ class CustomDetector {
    */
   detect(exports, imports, components) {
     const results = [];
-    
+
     // 实现检测逻辑
     for (const [file, fileExports] of exports) {
       // 自定义检测规则
     }
-    
+
     return results;
   }
 }
@@ -489,18 +489,14 @@ const { CustomDetector } = require('./custom-detector');
 class DeadCodeFinderBase {
   constructor(options = {}) {
     // ... 现有代码
-    
+
     // 添加自定义检测器
     this.customDetector = new CustomDetector(options);
   }
 
   // 添加检测方法
   detectCustomIssues() {
-    return this.customDetector.detect(
-      this.exports,
-      this.imports,
-      this.components
-    );
+    return this.customDetector.detect(this.exports, this.imports, this.components);
   }
 }
 ```
@@ -512,11 +508,11 @@ class DeadCodeFinderBase {
 ```javascript
 async analyze() {
   // ... 现有分析代码
-  
+
   // 添加自定义检测
   Reporter.printDetectionStage('自定义检测');
   this.customResults = this.detectCustomIssues();
-  
+
   return {
     unusedExports: this.unusedExports,
     unusedComponents: this.unusedComponents,
@@ -548,7 +544,7 @@ function parseCustom(content, filePath) {
   try {
     // 预处理内容（如果需要）
     const processedContent = preprocessContent(content);
-    
+
     // 使用 Babel 解析
     const ast = babelParse(processedContent, {
       sourceType: 'module',
@@ -556,7 +552,7 @@ function parseCustom(content, filePath) {
         // 添加必要的插件
       ],
     });
-    
+
     return {
       ast,
       success: true,
@@ -603,12 +599,12 @@ const { parseCustom } = require('./custom-parser');
 
 function parse(content, filePath) {
   const ext = path.extname(filePath).toLowerCase();
-  
+
   // 添加新扩展名支持
   if (ext === '.custom') {
     return parseCustom(content, filePath);
   }
-  
+
   // ... 现有代码
 }
 ```
@@ -625,7 +621,7 @@ function parse(content, filePath) {
  */
 function walkCustom(ast) {
   const customItems = [];
-  
+
   const visitor = {
     // 添加访问者方法
     CustomNodeType(path) {
@@ -637,7 +633,7 @@ function walkCustom(ast) {
       });
     },
   };
-  
+
   traverse(ast, visitor);
   return customItems;
 }
@@ -661,19 +657,13 @@ module.exports = {
   "extensions": [".js", ".vue", ".jsx", ".ts", ".tsx"],
   "ignoreDirs": ["node_modules", "dist", ".git"],
   "mode": "ast",
-  
+
   // 自定义配置
-  "customDetectors": [
-    "./detectors/i18n-detector.js",
-    "./detectors/router-detector.js"
-  ],
+  "customDetectors": ["./detectors/i18n-detector.js", "./detectors/router-detector.js"],
   "customParsers": {
     ".svelte": "./parsers/svelte-parser.js"
   },
-  "ignoreExports": [
-    "customIgnore1",
-    "customIgnore2"
-  ],
+  "ignoreExports": ["customIgnore1", "customIgnore2"],
   "hooks": {
     "beforeAnalyze": "./hooks/before-analyze.js",
     "afterAnalyze": "./hooks/after-analyze.js",
@@ -688,7 +678,7 @@ module.exports = {
 // detectors/i18n-detector.js
 module.exports = {
   name: 'i18n-detector',
-  
+
   /**
    * 检测未使用的 i18n 翻译键
    * @param {Object} context - 检测上下文
@@ -697,11 +687,11 @@ module.exports = {
   detect(context) {
     const { exports, imports, fileContents } = context;
     const unusedKeys = [];
-    
+
     // 实现检测逻辑
-    
+
     return unusedKeys;
-  }
+  },
 };
 ```
 
@@ -709,12 +699,12 @@ module.exports = {
 
 ```javascript
 // hooks/before-analyze.js
-module.exports = function(context) {
+module.exports = function (context) {
   console.log('开始分析，文件数量:', context.fileCount);
-  
+
   // 可以修改配置
   context.config.customOption = 'value';
-  
+
   // 返回修改后的上下文
   return context;
 };

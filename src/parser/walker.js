@@ -224,13 +224,9 @@ function processImportSpecifier(spec, source, isInternal, line, imports) {
       createStaticImport(spec.local.name, spec.imported.name, source, isInternal, line)
     );
   } else if (specType === 'ImportDefaultSpecifier') {
-    imports.default.push(
-      createDefaultImport(spec.local.name, source, isInternal, line)
-    );
+    imports.default.push(createDefaultImport(spec.local.name, source, isInternal, line));
   } else if (specType === 'ImportNamespaceSpecifier') {
-    imports.namespace.push(
-      createNamespaceImport(spec.local.name, source, isInternal, line)
-    );
+    imports.namespace.push(createNamespaceImport(spec.local.name, source, isInternal, line));
   }
 }
 
@@ -498,9 +494,7 @@ function walkComponents(ast) {
     FunctionDeclaration(path) {
       const name = path.node.id?.name;
       if (name && isPascalCase(name)) {
-        components.functions.push(
-          createComponentInfo(name, 'function', getLine(path.node))
-        );
+        components.functions.push(createComponentInfo(name, 'function', getLine(path.node)));
       }
     },
 
@@ -515,13 +509,9 @@ function walkComponents(ast) {
       // 函数组件: const Foo = () => ...
       if (init.isArrowFunctionExpression() || init.isFunctionExpression()) {
         if (isPascalCase(name)) {
-          components.functions.push(
-            createComponentInfo(name, 'function', getLine(path.node))
-          );
+          components.functions.push(createComponentInfo(name, 'function', getLine(path.node)));
         } else if (isHookName(name)) {
-          components.hooks.push(
-            createComponentInfo(name, 'hook', getLine(path.node))
-          );
+          components.hooks.push(createComponentInfo(name, 'hook', getLine(path.node)));
         }
       }
     },
@@ -530,9 +520,7 @@ function walkComponents(ast) {
       const name = path.node.id?.name;
 
       if (name && isPascalCase(name) && isReactComponentClass(path.node.superClass)) {
-        components.classes.push(
-          createComponentInfo(name, 'class', getLine(path.node))
-        );
+        components.classes.push(createComponentInfo(name, 'class', getLine(path.node)));
       }
     },
   });

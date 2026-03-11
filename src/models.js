@@ -16,7 +16,14 @@ class ImportItem {
    * @param {boolean} isDynamic - 是否为动态导入
    * @param {boolean} isSideEffect - 是否为副作用导入
    */
-  constructor(name, source, isDefault = false, isInternal = false, isDynamic = false, isSideEffect = false) {
+  constructor(
+    name,
+    source,
+    isDefault = false,
+    isInternal = false,
+    isDynamic = false,
+    isSideEffect = false
+  ) {
     this.name = name;
     this.source = source;
     this.isDefault = isDefault;
@@ -146,7 +153,13 @@ class FixResult {
    * @param {number} deletedToolFiles - 删除的工具文件数量
    * @param {string} backupDir - 备份目录
    */
-  constructor(cancelled = false, fixedExports = 0, deletedComponents = 0, deletedToolFiles = 0, backupDir = null) {
+  constructor(
+    cancelled = false,
+    fixedExports = 0,
+    deletedComponents = 0,
+    deletedToolFiles = 0,
+    backupDir = null
+  ) {
     this.cancelled = cancelled;
     this.fixedExports = fixedExports;
     this.deletedComponents = deletedComponents;
@@ -161,5 +174,5 @@ module.exports = {
   ComponentItem,
   UnusedExportItem,
   AnalysisResult,
-  FixResult
+  FixResult,
 };

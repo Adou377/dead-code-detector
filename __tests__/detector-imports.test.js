@@ -151,11 +151,9 @@ import './styles.css';
     test('应该构建所有导入的索引', () => {
       finder.imports.set('file1.js', [
         new ImportItem('foo', './module1', false, true),
-        new ImportItem('bar', './module2', false, true)
+        new ImportItem('bar', './module2', false, true),
       ]);
-      finder.imports.set('file2.js', [
-        new ImportItem('foo', './module1', false, true)
-      ]);
+      finder.imports.set('file2.js', [new ImportItem('foo', './module1', false, true)]);
 
       const testImports = new Map([['baz', new Set(['test.js'])]]);
 
@@ -168,9 +166,7 @@ import './styles.css';
     });
 
     test('应该排除外部导入', () => {
-      finder.imports.set('file1.js', [
-        new ImportItem('React', 'react', true, false)
-      ]);
+      finder.imports.set('file1.js', [new ImportItem('React', 'react', true, false)]);
 
       const result = finder.buildAllImportsIndex(new Map());
 
@@ -178,9 +174,7 @@ import './styles.css';
     });
 
     test('应该合并测试导入', () => {
-      finder.imports.set('file1.js', [
-        new ImportItem('foo', './module', false, true),
-      ]);
+      finder.imports.set('file1.js', [new ImportItem('foo', './module', false, true)]);
 
       const testImports = new Map([['bar', new Set(['test.js'])]]);
 
@@ -194,9 +188,9 @@ import './styles.css';
   describe('collectSideEffectImports 方法', () => {
     test('应该收集副作用导入的文件', () => {
       finder.imports.set('file1.js', [
-        new ImportItem('', './styles.css', false, true, false, true)
+        new ImportItem('', './styles.css', false, true, false, true),
       ]);
-      
+
       jest.spyOn(finder, 'resolveImportPath').mockReturnValue('styles.css');
 
       const result = finder.collectSideEffectImports();

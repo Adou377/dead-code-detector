@@ -659,7 +659,10 @@ describe('CacheManager', () => {
     test('setDependency 应正确设置依赖关系', () => {
       cacheManager.load();
 
-      const result = cacheManager.setDependency('/src/main.js', ['/src/utils.js', '/src/helpers.js']);
+      const result = cacheManager.setDependency('/src/main.js', [
+        '/src/utils.js',
+        '/src/helpers.js',
+      ]);
 
       expect(result).toBe(true);
       expect(cacheManager.getDependencies('/src/main.js')).toBeInstanceOf(Set);

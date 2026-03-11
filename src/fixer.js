@@ -35,7 +35,7 @@ function handleFixError(fullPath, originalContent, error) {
 
 function applyFixToFile(fullPath, originalContent, analysisResult) {
   const { lines, linesToRemove, modified } = analysisResult;
-  
+
   if (modified) {
     writeFixedFile(fullPath, lines, linesToRemove);
   }

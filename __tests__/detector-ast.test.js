@@ -312,10 +312,13 @@ describe('DeadCodeFinderAST', () => {
 
     test('应该正确解析 JSX 文件', async () => {
       const jsxFile = path.join(testDir, 'Component.jsx');
-      fs.writeFileSync(jsxFile, `
+      fs.writeFileSync(
+        jsxFile,
+        `
         import React from 'react';
         export function Component() { return <div />; }
-      `);
+      `
+      );
 
       // 验证解析不抛出错误
       await expect(finder.parseFile(jsxFile)).resolves.not.toThrow();
@@ -332,10 +335,13 @@ describe('DeadCodeFinderAST', () => {
 
     test('应该正确解析 TSX 文件', async () => {
       const tsxFile = path.join(testDir, 'Widget.tsx');
-      fs.writeFileSync(tsxFile, `
+      fs.writeFileSync(
+        tsxFile,
+        `
         import React from 'react';
         export const Widget: React.FC = () => <div />;
-      `);
+      `
+      );
 
       await finder.parseFile(tsxFile);
 
@@ -344,12 +350,15 @@ describe('DeadCodeFinderAST', () => {
 
     test('应该正确解析 Vue 文件', async () => {
       const vueFile = path.join(testDir, 'MyComponent.vue');
-      fs.writeFileSync(vueFile, `
+      fs.writeFileSync(
+        vueFile,
+        `
         <template><div>test</div></template>
         <script>
         export default { name: 'MyComponent' }
         </script>
-      `);
+      `
+      );
 
       await finder.parseFile(vueFile);
 
@@ -374,7 +383,7 @@ describe('DeadCodeFinderAST', () => {
       fs.writeFileSync(largeFile, largeContent);
 
       const warnMessages = [];
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation((msg) => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(msg => {
         warnMessages.push(msg);
       });
 
@@ -459,9 +468,7 @@ describe('DeadCodeFinderAST', () => {
         { name: 'foo', source: './b.js', isInternal: true },
         { name: 'bar', source: './c.js', isInternal: true },
       ]);
-      finder.imports.set('b.js', [
-        { name: 'baz', source: './d.js', isInternal: true },
-      ]);
+      finder.imports.set('b.js', [{ name: 'baz', source: './d.js', isInternal: true }]);
 
       const result = finder.collectAllImports(new Map());
 
@@ -472,9 +479,7 @@ describe('DeadCodeFinderAST', () => {
 
     test('应该处理动态导入', () => {
       finder.exports.set('dynamic.js', [{ name: 'dynamicExport', type: 'named', line: 1 }]);
-      finder.imports.set('a.js', [
-        { source: './dynamic.js', isDynamic: true, isInternal: true },
-      ]);
+      finder.imports.set('a.js', [{ source: './dynamic.js', isDynamic: true, isInternal: true }]);
 
       const result = finder.collectAllImports(new Map());
 
@@ -483,9 +488,7 @@ describe('DeadCodeFinderAST', () => {
     });
 
     test('应该合并测试导入', () => {
-      finder.imports.set('a.js', [
-        { name: 'foo', source: './b.js', isInternal: true },
-      ]);
+      finder.imports.set('a.js', [{ name: 'foo', source: './b.js', isInternal: true }]);
       const testImports = new Map([['bar', new Set(['test.js'])]]);
 
       const result = finder.collectAllImports(testImports);
@@ -497,8 +500,12 @@ describe('DeadCodeFinderAST', () => {
 
   describe('detectUnusedExports', () => {
     test('应该检测未使用的导出', async () => {
-      finder.exports.set('module.js', [{ name: 'unusedFunc', type: 'named', line: 1, code: 'export const unusedFunc = 1;' }]);
-      finder.imports.set('other.js', [{ name: 'usedFunc', source: './module.js', isInternal: true }]);
+      finder.exports.set('module.js', [
+        { name: 'unusedFunc', type: 'named', line: 1, code: 'export const unusedFunc = 1;' },
+      ]);
+      finder.imports.set('other.js', [
+        { name: 'usedFunc', source: './module.js', isInternal: true },
+      ]);
       finder.fileContents.set('module.js', 'export const unusedFunc = 1;');
 
       const allImports = new Map([['usedFunc', new Set(['other.js'])]]);
@@ -528,7 +535,9 @@ describe('DeadCodeFinderAST', () => {
     test('应该检测未使用的组件', async () => {
       finder.components.set('UnusedComp.vue', { name: 'UnusedComp', isGlobal: false });
       finder.components.set('UsedComp.vue', { name: 'UsedComp', isGlobal: false });
-      finder.imports.set('app.js', [{ name: 'UsedComp', source: './UsedComp.vue', isInternal: true }]);
+      finder.imports.set('app.js', [
+        { name: 'UsedComp', source: './UsedComp.vue', isInternal: true },
+      ]);
       finder.fileContents.set('UnusedComp.vue', '<template><div></div></template>');
       finder.fileContents.set('UsedComp.vue', '<template><div></div></template>');
 
@@ -697,7 +706,7 @@ describe('DeadCodeFinderAST', () => {
       const content = 'export const foo = 1;\nexport const bar = 2;\nexport const baz = 3;';
       const items = [
         { name: 'foo', line: 1 },
-        { name: 'baz', line: 3 }
+        { name: 'baz', line: 3 },
       ];
 
       const result = analyzeLinesToRemove(content, items);
@@ -713,7 +722,7 @@ describe('DeadCodeFinderAST', () => {
       const items = [
         { name: 'foo', line: 1 },
         { name: 'bar', line: 1 },
-        { name: 'baz', line: 2 }
+        { name: 'baz', line: 2 },
       ];
 
       const result = groupItemsByLine(items);
@@ -779,9 +788,7 @@ describe('分支覆盖补充测试', () => {
     test('动态导入路径无法解析时应该跳过', () => {
       finder = new DeadCodeFinderAST({ srcDir: testDir });
 
-      finder.exports.set('dynamic-module.js', [
-        { name: 'dynamicExport', type: 'named', line: 1 },
-      ]);
+      finder.exports.set('dynamic-module.js', [{ name: 'dynamicExport', type: 'named', line: 1 }]);
 
       finder.imports.set('consumer.js', [
         { source: './nonexistent.js', isDynamic: true, isInternal: true },
@@ -813,9 +820,7 @@ describe('分支覆盖补充测试', () => {
     test('应该正确处理无名称的副作用导入', () => {
       finder = new DeadCodeFinderAST({ srcDir: testDir });
 
-      finder.exports.set('side-effect.js', [
-        { name: 'exportedItem', type: 'named', line: 1 },
-      ]);
+      finder.exports.set('side-effect.js', [{ name: 'exportedItem', type: 'named', line: 1 }]);
 
       finder.imports.set('consumer.js', [
         { source: './side-effect.js', isInternal: true, name: null },
@@ -831,9 +836,7 @@ describe('分支覆盖补充测试', () => {
     test('副作用导入路径无法解析时应该跳过', () => {
       finder = new DeadCodeFinderAST({ srcDir: testDir });
 
-      finder.exports.set('side-effect.js', [
-        { name: 'exportedItem', type: 'named', line: 1 },
-      ]);
+      finder.exports.set('side-effect.js', [{ name: 'exportedItem', type: 'named', line: 1 }]);
 
       finder.imports.set('consumer.js', [
         { source: './nonexistent.js', isInternal: true, name: null },
@@ -1031,13 +1034,16 @@ describe('分支覆盖补充测试', () => {
     test('应该正确识别 Vue 组件并设置 isScriptSetup', async () => {
       finder = new DeadCodeFinderAST({ srcDir: testDir });
       const vueFile = path.join(testDir, 'SetupComponent.vue');
-      fs.writeFileSync(vueFile, `
+      fs.writeFileSync(
+        vueFile,
+        `
         <template><div>test</div></template>
         <script setup>
         import { ref } from 'vue';
         const count = ref(0);
         </script>
-      `);
+      `
+      );
 
       await finder.parseFile(vueFile);
 
@@ -1049,12 +1055,15 @@ describe('分支覆盖补充测试', () => {
     test('应该正确处理 index.vue 文件（不添加到组件）', async () => {
       finder = new DeadCodeFinderAST({ srcDir: testDir });
       const vueFile = path.join(testDir, 'index.vue');
-      fs.writeFileSync(vueFile, `
+      fs.writeFileSync(
+        vueFile,
+        `
         <template><div>test</div></template>
         <script>
         export default { name: 'IndexComponent' }
         </script>
-      `);
+      `
+      );
 
       await finder.parseFile(vueFile);
 
@@ -1064,12 +1073,15 @@ describe('分支覆盖补充测试', () => {
     test('应该正确识别全局组件（The 前缀）', async () => {
       finder = new DeadCodeFinderAST({ srcDir: testDir });
       const vueFile = path.join(testDir, 'TheHeader.vue');
-      fs.writeFileSync(vueFile, `
+      fs.writeFileSync(
+        vueFile,
+        `
         <template><header>header</header></template>
         <script>
         export default { name: 'TheHeader' }
         </script>
-      `);
+      `
+      );
 
       await finder.parseFile(vueFile);
 
@@ -1081,12 +1093,15 @@ describe('分支覆盖补充测试', () => {
     test('应该正确识别全局组件（App 前缀）', async () => {
       finder = new DeadCodeFinderAST({ srcDir: testDir });
       const vueFile = path.join(testDir, 'AppLayout.vue');
-      fs.writeFileSync(vueFile, `
+      fs.writeFileSync(
+        vueFile,
+        `
         <template><div>layout</div></template>
         <script>
         export default { name: 'AppLayout' }
         </script>
-      `);
+      `
+      );
 
       await finder.parseFile(vueFile);
 
@@ -1102,11 +1117,14 @@ describe('分支覆盖补充测试', () => {
       fs.mkdirSync(utilsDir, { recursive: true });
       finder = new DeadCodeFinderAST({ srcDir: testDir });
       const utilFile = path.join(utilsDir, 'helper.js');
-      fs.writeFileSync(utilFile, `
+      fs.writeFileSync(
+        utilFile,
+        `
         export function HelperFunction() {
           return 'helper';
         }
-      `);
+      `
+      );
 
       await finder.parseFile(utilFile);
 
@@ -1118,12 +1136,15 @@ describe('分支覆盖补充测试', () => {
       fs.mkdirSync(componentsDir, { recursive: true });
       finder = new DeadCodeFinderAST({ srcDir: testDir });
       const componentFile = path.join(componentsDir, 'Button.jsx');
-      fs.writeFileSync(componentFile, `
+      fs.writeFileSync(
+        componentFile,
+        `
         import React from 'react';
         export function Button() {
           return <button>Click</button>;
         }
-      `);
+      `
+      );
 
       await finder.parseFile(componentFile);
 
@@ -1137,14 +1158,17 @@ describe('分支覆盖补充测试', () => {
       fs.mkdirSync(componentsDir, { recursive: true });
       finder = new DeadCodeFinderAST({ srcDir: testDir });
       const componentFile = path.join(componentsDir, 'Header.jsx');
-      fs.writeFileSync(componentFile, `
+      fs.writeFileSync(
+        componentFile,
+        `
         import React from 'react';
         export class Header extends React.Component {
           render() {
             return <header>Header</header>;
           }
         }
-      `);
+      `
+      );
 
       await finder.parseFile(componentFile);
 
@@ -1158,9 +1182,12 @@ describe('分支覆盖补充测试', () => {
       fs.mkdirSync(componentsDir, { recursive: true });
       finder = new DeadCodeFinderAST({ srcDir: testDir });
       const indexFile = path.join(componentsDir, 'index.js');
-      fs.writeFileSync(indexFile, `
+      fs.writeFileSync(
+        indexFile,
+        `
         export { default as Button } from './Button';
-      `);
+      `
+      );
 
       await finder.parseFile(indexFile);
 
@@ -1326,9 +1353,7 @@ describe('ComponentDetector', () => {
 
   describe('collectComponentUsages', () => {
     test('应该收集组件使用情况', () => {
-      const imports = new Map([
-        ['file.js', [{ name: 'TestComponent', isInternal: true }]],
-      ]);
+      const imports = new Map([['file.js', [{ name: 'TestComponent', isInternal: true }]]]);
       const testImports = new Map();
 
       const result = detector.collectComponentUsages(imports, testImports);
@@ -1404,9 +1429,7 @@ describe('ComponentDetector', () => {
     });
 
     test('应该跳过全局组件', () => {
-      const components = new Map([
-        ['TheHeader.vue', { name: 'TheHeader', isGlobal: true }],
-      ]);
+      const components = new Map([['TheHeader.vue', { name: 'TheHeader', isGlobal: true }]]);
       const componentUsages = new Map();
       const componentTagIndex = new Map();
 
@@ -1465,10 +1488,13 @@ describe('并发场景测试', () => {
 
       fs.writeFileSync(jsFile, 'export const jsFunc = () => 1;');
       fs.writeFileSync(tsFile, 'export type MyType = string;');
-      fs.writeFileSync(vueFile, `
+      fs.writeFileSync(
+        vueFile,
+        `
         <template><div>test</div></template>
         <script>export default { name: 'Component' }; export const vueFunc = () => 1;</script>
-      `);
+      `
+      );
       fs.writeFileSync(jsxFile, 'export const JSXComp = () => <div />;');
       fs.writeFileSync(tsxFile, 'export const TSXComp = () => <div />;');
 
@@ -1611,42 +1637,44 @@ describe('并发场景测试', () => {
 
       expect(finder.shouldUseWorkerMode()).toBe(false);
     });
-    
+
     test('createBatches 应正确分割文件列表', () => {
       finder = new DeadCodeFinderAST({ srcDir: testDir });
-      
-      const files = Array(25).fill(0).map((_, i) => `file${i}.js`);
-      
+
+      const files = Array(25)
+        .fill(0)
+        .map((_, i) => `file${i}.js`);
+
       const batches = finder.createBatches(files, 10);
-      
+
       expect(batches.length).toBe(3);
       expect(batches[0].length).toBe(10);
       expect(batches[1].length).toBe(10);
       expect(batches[2].length).toBe(5);
     });
-    
+
     test('createBatches 应处理空列表', () => {
       finder = new DeadCodeFinderAST({ srcDir: testDir });
-      
+
       const batches = finder.createBatches([], 10);
-      
+
       expect(batches.length).toBe(0);
     });
-    
+
     test('createBatches 应处理小于批次大小的列表', () => {
       finder = new DeadCodeFinderAST({ srcDir: testDir });
-      
+
       const files = ['a.js', 'b.js', 'c.js'];
-      
+
       const batches = finder.createBatches(files, 10);
-      
+
       expect(batches.length).toBe(1);
       expect(batches[0].length).toBe(3);
     });
-    
+
     test('processWorkerResult 应正确处理成功结果', () => {
       finder = new DeadCodeFinderAST({ srcDir: testDir });
-      
+
       const result = {
         relativePath: 'test.js',
         success: true,
@@ -1655,36 +1683,36 @@ describe('并发场景测试', () => {
         jsxComponents: ['TestComponent'],
         componentInfo: { name: 'TestComponent', isGlobal: false },
       };
-      
+
       finder.processWorkerResult(result);
-      
+
       expect(finder.exports.has('test.js')).toBe(true);
       expect(finder.imports.has('test.js')).toBe(true);
       expect(finder.jsxUsage.has('test.js')).toBe(true);
       expect(finder.components.has('test.js')).toBe(true);
     });
-    
+
     test('processWorkerResult 应正确处理错误结果', () => {
       finder = new DeadCodeFinderAST({ srcDir: testDir });
-      
+
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-      
+
       const result = {
         relativePath: 'error.js',
         success: false,
         error: 'Parse error',
         filePath: path.join(testDir, 'error.js'),
       };
-      
+
       finder.processWorkerResult(result);
-      
+
       expect(finder.exports.has('error.js')).toBe(false);
       consoleSpy.mockRestore();
     });
-    
+
     test('processWorkerResult 应正确处理空结果', () => {
       finder = new DeadCodeFinderAST({ srcDir: testDir });
-      
+
       const result = {
         relativePath: 'empty.js',
         success: true,
@@ -1692,9 +1720,9 @@ describe('并发场景测试', () => {
         imports: [],
         jsxComponents: [],
       };
-      
+
       finder.processWorkerResult(result);
-      
+
       expect(finder.exports.has('empty.js')).toBe(false);
       expect(finder.imports.has('empty.js')).toBe(false);
     });
@@ -1728,7 +1756,10 @@ describe('并发场景测试', () => {
 
       for (let i = 0; i < 20; i++) {
         const filePath = path.join(testDir, `file${i}.js`);
-        fs.writeFileSync(filePath, `import { shared } from './shared.js'; export const func${i} = () => shared;`);
+        fs.writeFileSync(
+          filePath,
+          `import { shared } from './shared.js'; export const func${i} = () => shared;`
+        );
       }
 
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
@@ -1744,10 +1775,13 @@ describe('并发场景测试', () => {
 
       for (let i = 0; i < 20; i++) {
         const vueFile = path.join(testDir, `Component${i}.vue`);
-        fs.writeFileSync(vueFile, `
+        fs.writeFileSync(
+          vueFile,
+          `
           <template><div>test</div></template>
           <script>export default { name: 'Component${i}' }</script>
-        `);
+        `
+        );
       }
 
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
@@ -1764,9 +1798,9 @@ describe('Mock 数据一致性检查', () => {
   describe('ImportItem Mock 数据结构', () => {
     test('Mock ImportItem 应与真实结构一致', () => {
       const { ImportItem } = require('../src/models.js');
-      
+
       const realItem = new ImportItem('testName', './test.js', false, true, false, false);
-      
+
       const mockItem = {
         name: 'testName',
         source: './test.js',
@@ -1775,15 +1809,15 @@ describe('Mock 数据一致性检查', () => {
         isDynamic: false,
         isSideEffect: false,
       };
-      
+
       expect(Object.keys(mockItem).sort()).toEqual(Object.keys(realItem).sort());
     });
-    
+
     test('ImportItem 应包含所有必要属性', () => {
       const { ImportItem } = require('../src/models.js');
-      
+
       const item = new ImportItem('foo', './bar.js', true, true);
-      
+
       expect(item).toHaveProperty('name');
       expect(item).toHaveProperty('source');
       expect(item).toHaveProperty('isDefault');
@@ -1792,13 +1826,13 @@ describe('Mock 数据一致性检查', () => {
       expect(item).toHaveProperty('isSideEffect');
     });
   });
-  
+
   describe('ExportItem Mock 数据结构', () => {
     test('Mock ExportItem 应与真实结构一致', () => {
       const { ExportItem } = require('../src/models.js');
-      
+
       const realItem = new ExportItem('testExport', 'named', 10, 'export const testExport = 1;');
-      
+
       const mockItem = {
         name: 'testExport',
         type: 'named',
@@ -1806,68 +1840,75 @@ describe('Mock 数据一致性检查', () => {
         code: 'export const testExport = 1;',
         source: null,
       };
-      
+
       expect(Object.keys(mockItem).sort()).toEqual(Object.keys(realItem).sort());
     });
-    
+
     test('ExportItem 应支持不同类型', () => {
       const { ExportItem } = require('../src/models.js');
-      
+
       const namedExport = new ExportItem('foo', 'named', 1, 'export const foo = 1;');
       expect(namedExport.type).toBe('named');
-      
+
       const defaultExport = new ExportItem('default', 'default', 5, 'export default function() {}');
       expect(defaultExport.type).toBe('default');
-      
-      const reexport = new ExportItem('bar', 'reexport', 8, 'export { bar } from "./bar.js";', './bar.js');
+
+      const reexport = new ExportItem(
+        'bar',
+        'reexport',
+        8,
+        'export { bar } from "./bar.js";',
+        './bar.js'
+      );
       expect(reexport.type).toBe('reexport');
       expect(reexport.source).toBe('./bar.js');
     });
   });
-  
+
   describe('ComponentItem Mock 数据结构', () => {
     test('Mock ComponentItem 应与真实结构一致', () => {
       const { ComponentItem } = require('../src/models.js');
-      
+
       const realItem = new ComponentItem('TestComponent', false, true);
-      
+
       const mockItem = {
         name: 'TestComponent',
         used: false,
         isGlobal: true,
       };
-      
+
       expect(Object.keys(mockItem).sort()).toEqual(Object.keys(realItem).sort());
     });
   });
-  
+
   describe('导出提取一致性测试', () => {
     test('正则模式与 AST 模式结果应一致', () => {
       const { parse } = require('../src/parser/index.js');
       const { walkExports } = require('../src/parser/walker.js');
-      
-      const testContent = 'export const foo = 1;\nexport default function() {}\nexport { bar, baz } from "./module.js";';
-      
+
+      const testContent =
+        'export const foo = 1;\nexport default function() {}\nexport { bar, baz } from "./module.js";';
+
       const result = parse(testContent, 'test.js');
       const astExports = walkExports(result.ast);
-      
+
       const allExports = [
         ...astExports.named,
         ...astExports.group,
         astExports.default,
         ...astExports.reexport,
       ].filter(Boolean);
-      
+
       expect(allExports.some(e => e.name === 'foo')).toBe(true);
       expect(allExports.some(e => e.name === 'default' || e.type === 'default')).toBe(true);
       expect(allExports.some(e => e.name === 'bar')).toBe(true);
       expect(allExports.some(e => e.name === 'baz')).toBe(true);
     });
-    
+
     test('导入提取应包含所有导入类型', () => {
       const { parse } = require('../src/parser/index.js');
       const { walkImports } = require('../src/parser/walker.js');
-      
+
       const testContent = `
         import { foo, bar } from './module.js';
         import defaultExport from './default.js';
@@ -1875,30 +1916,41 @@ describe('Mock 数据一致性检查', () => {
         import './side-effect.js';
         const dynamic = import('./dynamic.js');
       `;
-      
+
       const result = parse(testContent, 'test.js');
       const imports = walkImports(result.ast);
-      
+
       expect(imports.static.length).toBeGreaterThan(0);
       expect(imports.default.length).toBeGreaterThan(0);
       expect(imports.namespace.length).toBeGreaterThan(0);
       expect(imports.dynamic.length).toBeGreaterThan(0);
     });
   });
-  
+
   describe('工厂函数测试', () => {
     test('ExportItem 应支持不同创建方式', () => {
       const { ExportItem } = require('../src/models.js');
-      
+
       const namedExport = new ExportItem('foo', 'named', 1, 'export const foo = 1;');
       expect(namedExport.name).toBe('foo');
       expect(namedExport.type).toBe('named');
-      
-      const defaultExport = new ExportItem('defaultFunc', 'default', 5, 'export default function defaultFunc() {}');
+
+      const defaultExport = new ExportItem(
+        'defaultFunc',
+        'default',
+        5,
+        'export default function defaultFunc() {}'
+      );
       expect(defaultExport.name).toBe('defaultFunc');
       expect(defaultExport.type).toBe('default');
-      
-      const reexport = new ExportItem('bar', 'reexport', 10, 'export { bar } from "./bar.js";', './bar.js');
+
+      const reexport = new ExportItem(
+        'bar',
+        'reexport',
+        10,
+        'export { bar } from "./bar.js";',
+        './bar.js'
+      );
       expect(reexport.name).toBe('bar');
       expect(reexport.type).toBe('reexport');
       expect(reexport.source).toBe('./bar.js');

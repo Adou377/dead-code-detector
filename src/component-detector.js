@@ -188,12 +188,7 @@ class ComponentDetector {
         continue;
       }
 
-      const isUsed = this.isComponentUsed(
-        comp.name,
-        file,
-        componentUsages,
-        componentTagIndex
-      );
+      const isUsed = this.isComponentUsed(comp.name, file, componentUsages, componentTagIndex);
 
       if (!isUsed) {
         unusedComponents.push({ file, name: comp.name });
@@ -242,9 +237,7 @@ class ComponentDetector {
         );
 
         if (!isUsed) {
-          const exists = unusedComponents.some(
-            u => u.file === file && u.name === componentName
-          );
+          const exists = unusedComponents.some(u => u.file === file && u.name === componentName);
           if (!exists) {
             unusedComponents.push({
               file,

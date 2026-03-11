@@ -55,21 +55,21 @@ import { detect, DeadCodeFinderAST } from '@is_adou/dead-code-detector';
 #### 语法
 
 ```typescript
-async function detect(options?: DetectOptions): Promise<DetectResult>
+async function detect(options?: DetectOptions): Promise<DetectResult>;
 ```
 
 #### 参数
 
-| 参数 | 类型 | 描述 | 默认值 |
-|------|------|------|--------|
-| `srcDir` | `string` | 源代码目录 | `'./src'` |
-| `extensions` | `string[]` | 文件扩展名数组 | `['.js', '.vue', '.jsx', '.ts', '.tsx']` |
-| `ignoreDirs` | `string[]` | 忽略的目录数组 | `['node_modules', 'dist', '.git']` |
-| `mode` | `'ast' \| 'regex'` | 检测模式 | `'ast'` |
-| `verbose` | `boolean` | 是否显示详细日志 | `false` |
-| `config` | `string` | 配置文件路径 | `undefined` |
-| `maxFileSize` | `number` | 最大文件大小（字节） | `1000000` (1MB) |
-| `concurrency` | `number` | 最大并发数 | `50` |
+| 参数          | 类型               | 描述                 | 默认值                                   |
+| ------------- | ------------------ | -------------------- | ---------------------------------------- |
+| `srcDir`      | `string`           | 源代码目录           | `'./src'`                                |
+| `extensions`  | `string[]`         | 文件扩展名数组       | `['.js', '.vue', '.jsx', '.ts', '.tsx']` |
+| `ignoreDirs`  | `string[]`         | 忽略的目录数组       | `['node_modules', 'dist', '.git']`       |
+| `mode`        | `'ast' \| 'regex'` | 检测模式             | `'ast'`                                  |
+| `verbose`     | `boolean`          | 是否显示详细日志     | `false`                                  |
+| `config`      | `string`           | 配置文件路径         | `undefined`                              |
+| `maxFileSize` | `number`           | 最大文件大小（字节） | `1000000` (1MB)                          |
+| `concurrency` | `number`           | 最大并发数           | `50`                                     |
 
 #### 返回值
 
@@ -133,7 +133,7 @@ const finder = new DeadCodeFinderAST({
 执行完整的死代码分析。
 
 ```typescript
-async function analyze(): Promise<AnalysisResults>
+async function analyze(): Promise<AnalysisResults>;
 ```
 
 ##### `report()`
@@ -141,7 +141,7 @@ async function analyze(): Promise<AnalysisResults>
 生成并打印分析报告。
 
 ```typescript
-function report(): AnalysisResults
+function report(): AnalysisResults;
 ```
 
 ##### `fix(options)`
@@ -149,32 +149,32 @@ function report(): AnalysisResults
 自动修复未使用的代码。
 
 ```typescript
-async function fix(options?: FixOptions): Promise<FixResult>
+async function fix(options?: FixOptions): Promise<FixResult>;
 ```
 
-| 参数 | 类型 | 描述 | 默认值 |
-|------|------|------|--------|
-| `dryRun` | `boolean` | 仅预览，不实际执行 | `false` |
-| `confirm` | `boolean` | 需要用户确认 | `false` |
+| 参数      | 类型      | 描述               | 默认值  |
+| --------- | --------- | ------------------ | ------- |
+| `dryRun`  | `boolean` | 仅预览，不实际执行 | `false` |
+| `confirm` | `boolean` | 需要用户确认       | `false` |
 
 ##### `generateFixPreview()`
 
 生成修复预览，返回将要删除的内容。
 
 ```typescript
-function generateFixPreview(): FixPreview
+function generateFixPreview(): FixPreview;
 ```
 
 #### 属性
 
-| 属性 | 类型 | 描述 |
-|------|------|------|
-| `unusedExports` | `UnusedExport[]` | 未使用的导出列表 |
-| `unusedComponents` | `UnusedComponent[]` | 未使用的组件列表 |
-| `unusedToolFiles` | `string[]` | 未使用的工具文件列表 |
-| `exports` | `Map<string, ExportItem[]>` | 所有导出映射 |
-| `imports` | `Map<string, any[]>` | 所有导入映射 |
-| `components` | `Map<string, ComponentItem>` | 所有组件映射 |
+| 属性               | 类型                         | 描述                 |
+| ------------------ | ---------------------------- | -------------------- |
+| `unusedExports`    | `UnusedExport[]`             | 未使用的导出列表     |
+| `unusedComponents` | `UnusedComponent[]`          | 未使用的组件列表     |
+| `unusedToolFiles`  | `string[]`                   | 未使用的工具文件列表 |
+| `exports`          | `Map<string, ExportItem[]>`  | 所有导出映射         |
+| `imports`          | `Map<string, any[]>`         | 所有导入映射         |
+| `components`       | `Map<string, ComponentItem>` | 所有组件映射         |
 
 #### 示例
 
@@ -188,7 +188,7 @@ async function main() {
   });
 
   await finder.analyze();
-  
+
   const report = finder.report();
   console.log(`发现 ${report.unusedExports.length} 个未使用的导出`);
 
@@ -196,7 +196,7 @@ async function main() {
     dryRun: true,
     confirm: true,
   });
-  
+
   console.log('修复结果:', fixResult);
 }
 
@@ -248,7 +248,7 @@ const analyzer = new IncrementalAnalyzer({
 初始化分析器，加载缓存。
 
 ```typescript
-function initialize(): IncrementalAnalyzer
+function initialize(): IncrementalAnalyzer;
 ```
 
 ##### `getChangedFiles()`
@@ -262,7 +262,7 @@ function getChangedFiles(): {
   autoDetected: boolean;
   fallback: boolean;
   reason: string;
-}
+};
 ```
 
 ##### `getUncommittedChanges()`
@@ -270,7 +270,7 @@ function getChangedFiles(): {
 获取未提交的变更文件列表。
 
 ```typescript
-function getUncommittedChanges(): string[] | null
+function getUncommittedChanges(): string[] | null;
 ```
 
 ##### `analyzeAffectedFiles(changedFiles, imports)`
@@ -278,10 +278,7 @@ function getUncommittedChanges(): string[] | null
 分析受影响的文件（使用依赖图）。
 
 ```typescript
-function analyzeAffectedFiles(
-  changedFiles: string[],
-  imports: Map<string, any[]>
-): Set<string>
+function analyzeAffectedFiles(changedFiles: string[], imports: Map<string, any[]>): Set<string>;
 ```
 
 ##### `analyzeWithCache(filePaths, analyzer)`
@@ -297,7 +294,7 @@ function analyzeWithCache(
   cacheHits: number;
   cacheMisses: number;
   errors: Array<{ filePath: string; error: string }>;
-}
+};
 ```
 
 ##### `isIncrementalSupported()`
@@ -305,7 +302,7 @@ function analyzeWithCache(
 检查是否支持增量分析（是否在 Git 仓库中）。
 
 ```typescript
-function isIncrementalSupported(): boolean
+function isIncrementalSupported(): boolean;
 ```
 
 ##### `getCurrentBranch()`
@@ -313,7 +310,7 @@ function isIncrementalSupported(): boolean
 获取当前分支名。
 
 ```typescript
-function getCurrentBranch(): string | null
+function getCurrentBranch(): string | null;
 ```
 
 ##### `getLastCommitHash()`
@@ -321,7 +318,7 @@ function getCurrentBranch(): string | null
 获取最近一次提交的哈希。
 
 ```typescript
-function getLastCommitHash(): string | null
+function getLastCommitHash(): string | null;
 ```
 
 #### 示例
@@ -366,7 +363,7 @@ const depGraph = new DependencyGraph();
 添加依赖关系。
 
 ```typescript
-function addDependency(from: string, to: string): void
+function addDependency(from: string, to: string): void;
 ```
 
 ##### `buildFromImports(imports, srcDir)`
@@ -374,10 +371,7 @@ function addDependency(from: string, to: string): void
 批量构建依赖图。
 
 ```typescript
-function buildFromImports(
-  imports: Map<string, any[]>,
-  srcDir: string
-): void
+function buildFromImports(imports: Map<string, any[]>, srcDir: string): void;
 ```
 
 ##### `getAffectedFiles(changedFiles)`
@@ -385,7 +379,7 @@ function buildFromImports(
 获取受影响的所有文件（使用 BFS 遍历反向依赖）。
 
 ```typescript
-function getAffectedFiles(changedFiles: string[]): Set<string>
+function getAffectedFiles(changedFiles: string[]): Set<string>;
 ```
 
 ##### `getStats()`
@@ -397,7 +391,7 @@ function getStats(): {
   totalFiles: number;
   totalDependencies: number;
   reverseDepsCount: number;
-}
+};
 ```
 
 ##### `clear()`
@@ -405,7 +399,7 @@ function getStats(): {
 清空依赖图。
 
 ```typescript
-function clear(): void
+function clear(): void;
 ```
 
 #### 示例
@@ -455,7 +449,7 @@ const cache = new CacheManager({
 加载缓存数据。
 
 ```typescript
-function load(): CacheData
+function load(): CacheData;
 ```
 
 ##### `save()`
@@ -463,7 +457,7 @@ function load(): CacheData
 保存缓存到文件。
 
 ```typescript
-function save(): boolean
+function save(): boolean;
 ```
 
 ##### `get(filePath)`
@@ -471,7 +465,7 @@ function save(): boolean
 获取文件缓存数据。
 
 ```typescript
-function get(filePath: string): any | null
+function get(filePath: string): any | null;
 ```
 
 ##### `set(filePath, data)`
@@ -479,7 +473,7 @@ function get(filePath: string): any | null
 设置文件缓存数据。
 
 ```typescript
-function set(filePath: string, data: any): boolean
+function set(filePath: string, data: any): boolean;
 ```
 
 ##### `invalidate(filePath)`
@@ -487,7 +481,7 @@ function set(filePath: string, data: any): boolean
 使指定文件的缓存失效。
 
 ```typescript
-function invalidate(filePath: string): boolean
+function invalidate(filePath: string): boolean;
 ```
 
 ##### `clear()`
@@ -495,7 +489,7 @@ function invalidate(filePath: string): boolean
 清空所有缓存。
 
 ```typescript
-function clear(): boolean
+function clear(): boolean;
 ```
 
 ##### `getStats()`
@@ -512,7 +506,7 @@ function getStats(): {
   hits: number;
   misses: number;
   hitRate: number;
-}
+};
 ```
 
 ##### `getAge(filePath)`
@@ -520,7 +514,7 @@ function getStats(): {
 获取缓存条目的年龄（毫秒）。
 
 ```typescript
-function getAge(filePath: string): number | null
+function getAge(filePath: string): number | null;
 ```
 
 ##### `isExpired(filePath)`
@@ -528,7 +522,7 @@ function getAge(filePath: string): number | null
 检查缓存条目是否已过期。
 
 ```typescript
-function isExpired(filePath: string): boolean
+function isExpired(filePath: string): boolean;
 ```
 
 #### 示例
@@ -563,10 +557,11 @@ cache.save();
 加载配置文件。
 
 ```typescript
-function loadConfig(configPath?: string): ConfigFileOptions | null
+function loadConfig(configPath?: string): ConfigFileOptions | null;
 ```
 
 支持以下配置文件格式（优先级从高到低）：
+
 - `.deadcoderc.json`
 - `.deadcoderc.js`
 - `deadcode.config.js`
@@ -579,7 +574,7 @@ function loadConfig(configPath?: string): ConfigFileOptions | null
 function mergeConfig(
   cliArgs?: Partial<ConfigFileOptions>,
   configFile?: ConfigFileOptions | null
-): ConfigFileOptions
+): ConfigFileOptions;
 ```
 
 合并优先级：CLI 参数 > 配置文件 > 默认值
@@ -589,7 +584,7 @@ function mergeConfig(
 验证配置对象。
 
 ```typescript
-function validateConfig(config: any): boolean
+function validateConfig(config: any): boolean;
 ```
 
 ---
@@ -619,7 +614,17 @@ interface AnalysisResults {
 interface UnusedExport {
   file: string;
   name: string;
-  type: 'function' | 'variable' | 'class' | 'type' | 'interface' | 'enum' | 'default' | 'named' | 'star' | 'reexport';
+  type:
+    | 'function'
+    | 'variable'
+    | 'class'
+    | 'type'
+    | 'interface'
+    | 'enum'
+    | 'default'
+    | 'named'
+    | 'star'
+    | 'reexport';
   line: number;
   isDefault?: boolean;
   code?: string;
@@ -737,7 +742,7 @@ const { detect } = require('@is_adou/dead-code-detector');
 
 async function build() {
   console.log('检测死代码...');
-  
+
   const result = await detect({
     srcDir: './src',
     mode: 'ast',
@@ -767,7 +772,7 @@ import {
   DeadCodeFinderAST,
   type DetectOptions,
   type DetectResult,
-  type AnalysisResults
+  type AnalysisResults,
 } from '@is_adou/dead-code-detector';
 
 const options: DetectOptions = {
@@ -786,22 +791,22 @@ const { unusedExports, unusedComponents, unusedToolFiles }: AnalysisResults = re
 
 ## 错误码说明
 
-| 错误码 | 说明 | 解决方案 |
-|--------|------|----------|
-| E001 | 无法访问源目录 | 检查目录路径是否正确 |
-| E002 | 配置文件格式错误 | 检查 JSON 语法 |
-| E003 | 文件解析失败 | 检查文件语法是否正确 |
-| E004 | 自动修复失败 | 手动备份后重试 |
+| 错误码 | 说明             | 解决方案             |
+| ------ | ---------------- | -------------------- |
+| E001   | 无法访问源目录   | 检查目录路径是否正确 |
+| E002   | 配置文件格式错误 | 检查 JSON 语法       |
+| E003   | 文件解析失败     | 检查文件语法是否正确 |
+| E004   | 自动修复失败     | 手动备份后重试       |
 
 ## 版本兼容性
 
-| 依赖 | 版本要求 |
-|------|----------|
-| Node.js | >= 12.0.0 |
-| Babel | >= 7.0.0 |
-| Vue | 2.x 和 3.x |
-| React | 16.x+ |
-| TypeScript | >= 3.0.0 |
+| 依赖       | 版本要求   |
+| ---------- | ---------- |
+| Node.js    | >= 12.0.0  |
+| Babel      | >= 7.0.0   |
+| Vue        | 2.x 和 3.x |
+| React      | 16.x+      |
+| TypeScript | >= 3.0.0   |
 
 ## 相关链接
 

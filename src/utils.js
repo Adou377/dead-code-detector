@@ -109,10 +109,7 @@ function isSafePath(basePath, targetPath) {
     ? normalizedBase
     : normalizedBase + path.sep;
 
-  return (
-    normalizedTarget === normalizedBase ||
-    normalizedTarget.startsWith(baseWithSep)
-  );
+  return normalizedTarget === normalizedBase || normalizedTarget.startsWith(baseWithSep);
 }
 
 /**

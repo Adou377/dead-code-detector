@@ -223,12 +223,8 @@ describe('index.js - 主入口模块', () => {
       };
       const mockFinder = {
         analyze: jest.fn().mockResolvedValue(true),
-        unusedExports: [
-          { file: 'utils.js', name: 'unusedFunc', type: 'named', line: 10 },
-        ],
-        unusedComponents: [
-          { file: 'OldComponent.vue', name: 'OldComponent' },
-        ],
+        unusedExports: [{ file: 'utils.js', name: 'unusedFunc', type: 'named', line: 10 }],
+        unusedComponents: [{ file: 'OldComponent.vue', name: 'OldComponent' }],
         unusedToolFiles: ['helpers/deprecated.js'],
       };
 
@@ -526,9 +522,15 @@ describe('index.js - 主入口模块', () => {
         fallback: false,
         reason: '自动检测到基准分支: main',
       });
-      incrementalAnalyzer.filterUnusedExports.mockImplementation(exports => exports.filter(e => e.file.includes('changed')));
-      incrementalAnalyzer.filterUnusedComponents.mockImplementation(comps => comps.filter(c => c.file.includes('changed')));
-      incrementalAnalyzer.filterUnusedToolFiles.mockImplementation(files => files.filter(f => f.includes('changed')));
+      incrementalAnalyzer.filterUnusedExports.mockImplementation(exports =>
+        exports.filter(e => e.file.includes('changed'))
+      );
+      incrementalAnalyzer.filterUnusedComponents.mockImplementation(comps =>
+        comps.filter(c => c.file.includes('changed'))
+      );
+      incrementalAnalyzer.filterUnusedToolFiles.mockImplementation(files =>
+        files.filter(f => f.includes('changed'))
+      );
       incrementalAnalyzer.getCurrentBranch.mockReturnValue('feature');
       incrementalAnalyzer.getLastCommitHash.mockReturnValue('abc123');
 

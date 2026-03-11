@@ -7,8 +7,8 @@ class ReactClassComponent extends React.Component {
   }
 }
 
-const mapStateToProps = (state) => ({
-  data: state.data
+const mapStateToProps = state => ({
+  data: state.data,
 });
 
 export default connect(mapStateToProps)(ReactClassComponent);

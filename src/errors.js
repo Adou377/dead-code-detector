@@ -1,6 +1,6 @@
 /**
  * 错误处理模块
- * 
+ *
  * 提供统一的错误类型定义和格式化输出
  */
 
@@ -106,10 +106,7 @@ function formatError(error, context = {}) {
       return `未知错误: ${error}`;
     }
 
-    const lines = [
-      `[${errorDef.code}] ${errorDef.message}`,
-      `解决方案: ${errorDef.solution}`,
-    ];
+    const lines = [`[${errorDef.code}] ${errorDef.message}`, `解决方案: ${errorDef.solution}`];
 
     if (Object.keys(context).length > 0) {
       lines.push('上下文信息:');
@@ -122,10 +119,7 @@ function formatError(error, context = {}) {
   }
 
   if (error instanceof DeadCodeError) {
-    const lines = [
-      `[${error.code}] ${error.message}`,
-      `解决方案: ${error.solution}`,
-    ];
+    const lines = [`[${error.code}] ${error.message}`, `解决方案: ${error.solution}`];
 
     const mergedContext = { ...error.context, ...context };
     if (Object.keys(mergedContext).length > 0) {

@@ -261,7 +261,7 @@ export namespace MyNamespace {
 
   describe('extractStarExports 方法', () => {
     test('应该提取星号导出', () => {
-      const content = 'export * from \'./module\'';
+      const content = "export * from './module'";
       const exports = [];
 
       finder.extractStarExports(content, exports);
@@ -310,7 +310,7 @@ export namespace MyNamespace {
 
   describe('extractNamespaceReexports 方法', () => {
     test('应该提取命名空间重新导出', () => {
-      const content = 'export * as utils from \'./utils\'';
+      const content = "export * as utils from './utils'";
       const exports = [];
 
       finder.extractNamespaceReexports(content, exports);
@@ -324,7 +324,7 @@ export namespace MyNamespace {
 
   describe('extractGroupReexports 方法', () => {
     test('应该提取分组重新导出', () => {
-      const content = 'export { foo, bar } from \'./module\'';
+      const content = "export { foo, bar } from './module'";
       const exports = [];
 
       finder.extractGroupReexports(content, exports);
@@ -337,7 +337,7 @@ export namespace MyNamespace {
 
   describe('extractDefaultReexports 方法', () => {
     test('应该提取默认重新导出', () => {
-      const content = 'export { default as Button } from \'./Button\'';
+      const content = "export { default as Button } from './Button'";
       const exports = [];
 
       finder.extractDefaultReexports(content, exports);
@@ -363,7 +363,7 @@ export namespace MyNamespace {
 
   describe('extractTsTypeReexports 方法', () => {
     test('应该提取 TypeScript 类型重新导出', () => {
-      const content = 'export type { UserType } from \'./types\'';
+      const content = "export type { UserType } from './types'";
       const exports = [];
 
       finder.extractTsTypeReexports(content, exports);

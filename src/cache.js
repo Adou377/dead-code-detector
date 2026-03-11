@@ -1,6 +1,6 @@
 /**
  * 缓存管理模块
- * 
+ *
  * 提供持久化缓存功能，支持增量分析时复用未变更文件的分析结果
  */
 
@@ -61,10 +61,10 @@ class LRUCache {
     if (this.maxSize <= 0) {
       return;
     }
-    
+
     let node = this.cache.get(key);
     const entrySize = this._calculateEntrySize(key, value, size);
-    
+
     if (node) {
       this.currentMemoryBytes -= node.size;
       node.value = value;
@@ -81,7 +81,7 @@ class LRUCache {
       this._addToHead(node);
       this.currentSize++;
     }
-    
+
     this.currentMemoryBytes += entrySize;
     this._checkMemoryThreshold();
   }
@@ -341,7 +341,7 @@ class CacheManager {
     }
 
     const normalizedPath = this._normalizePath(filePath);
-    
+
     if (this.useLRU && this.lruCache.has(normalizedPath)) {
       const cachedEntry = this.lruCache.get(normalizedPath);
       if (cachedEntry && this._isEntryValid(normalizedPath, cachedEntry)) {
@@ -369,12 +369,12 @@ class CacheManager {
 
     this.hits++;
     this._updateAccessTime(normalizedPath);
-    
+
     if (this.useLRU) {
       const entrySize = this._calculateEntrySize(normalizedPath, entry);
       this.lruCache.set(normalizedPath, entry, entrySize);
     }
-    
+
     return entry.data;
   }
 
@@ -605,7 +605,10 @@ class CacheManager {
       this.load();
     }
     const normalizedPath = this._normalizePath(file);
-    this.dependencyGraph.set(normalizedPath, new Set(dependencies.map(d => this._normalizePath(d))));
+    this.dependencyGraph.set(
+      normalizedPath,
+      new Set(dependencies.map(d => this._normalizePath(d)))
+    );
     return true;
   }
 

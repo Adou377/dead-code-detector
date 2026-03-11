@@ -1,8 +1,5 @@
 // CI 环境中排除 worker 相关测试（资源限制导致不稳定）
-const testPathIgnorePatterns = [
-  '/node_modules/',
-  '/__tests__/fixtures/',
-];
+const testPathIgnorePatterns = ['/node_modules/', '/__tests__/fixtures/'];
 
 if (process.env.CI) {
   testPathIgnorePatterns.push('worker');
@@ -29,17 +26,9 @@ const coverageThreshold = process.env.CI
 
 module.exports = {
   testPathIgnorePatterns,
-  transformIgnorePatterns: [
-    'node_modules/',
-    '__tests__/fixtures/',
-  ],
-  testMatch: [
-    '**/__tests__/**/*.test.js',
-  ],
-  collectCoverageFrom: [
-    'src/**/*.js',
-    '!src/**/*.test.js',
-  ],
+  transformIgnorePatterns: ['node_modules/', '__tests__/fixtures/'],
+  testMatch: ['**/__tests__/**/*.test.js'],
+  collectCoverageFrom: ['src/**/*.js', '!src/**/*.test.js'],
   coverageThreshold,
   coverageReporters: ['text', 'lcov', 'html'],
   testTimeout: 30000,

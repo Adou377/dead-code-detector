@@ -1,9 +1,4 @@
-const {
-  walkExports,
-  walkImports,
-  walkJSX,
-  walkComponents,
-} = require('../src/parser/walker');
+const { walkExports, walkImports, walkJSX, walkComponents } = require('../src/parser/walker');
 const { parse } = require('../src/parser/index');
 const { isInternalImport } = require('../src/constants');
 

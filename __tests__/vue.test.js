@@ -300,7 +300,7 @@ export interface Product {
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       expect(exports.named).toHaveLength(2);
       expect(exports.named[0].name).toBe('User');
       expect(exports.named[1].name).toBe('Product');
@@ -323,7 +323,7 @@ export interface ApiResponse<T, E = Error> {
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       expect(exports.named).toHaveLength(2);
     });
 
@@ -337,7 +337,7 @@ export type { Product as ProductType } from './product';
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       expect(exports.reexport).toHaveLength(2);
     });
   });
@@ -363,7 +363,7 @@ export enum Direction {
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       expect(exports.named).toHaveLength(2);
       expect(exports.named[0].name).toBe('Status');
       expect(exports.named[1].name).toBe('Direction');
@@ -382,7 +382,7 @@ export const enum Colors {
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       expect(exports.named).toHaveLength(1);
       expect(exports.named[0].name).toBe('Colors');
     });
@@ -404,7 +404,7 @@ export enum MixedEnum {
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       expect(exports.named).toHaveLength(2);
     });
   });
@@ -425,7 +425,7 @@ export namespace Utils {
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       // 命名空间导出会包含命名空间本身和内部导出的成员
       expect(exports.named.length).toBeGreaterThanOrEqual(1);
       expect(exports.named.some(e => e.name === 'Utils')).toBe(true);
@@ -444,7 +444,7 @@ export namespace Outer {
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       // 嵌套命名空间会导出所有层级
       expect(exports.named.length).toBeGreaterThanOrEqual(1);
       expect(exports.named.some(e => e.name === 'Outer')).toBe(true);
@@ -467,7 +467,7 @@ export namespace User {
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       // 声明合并会导出多次同名项
       expect(exports.named.length).toBeGreaterThanOrEqual(2);
     });
@@ -489,7 +489,7 @@ export default MyInput;
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       // 验证默认导出存在
       expect(exports.default).not.toBeNull();
       // export default MyInput 导出的名称是 'default'
@@ -513,7 +513,7 @@ export { Button };
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       // 验证命名导出存在
       expect(exports.group.length).toBeGreaterThanOrEqual(1);
     });
@@ -546,7 +546,7 @@ export default Input;
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       // 验证默认导出存在
       expect(exports.default).not.toBeNull();
       expect(exports.default.name).toBe('default');
@@ -569,7 +569,7 @@ export default MyComponent;
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       // 验证默认导出存在
       expect(exports.default).not.toBeNull();
       expect(exports.default.name).toBe('default');
@@ -592,7 +592,7 @@ export { ListItem };
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       // 验证命名导出存在
       expect(exports.group.length).toBeGreaterThanOrEqual(1);
     });
@@ -612,7 +612,7 @@ export default InputField;
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       // 验证默认导出存在
       expect(exports.default).not.toBeNull();
       expect(exports.default.name).toBe('default');
@@ -643,7 +643,7 @@ export { Card };
 
       const { walkExports } = require('../src/parser/walker');
       const exports = walkExports(result.ast);
-      
+
       // 验证命名导出存在
       expect(exports.group.length).toBeGreaterThanOrEqual(1);
     });
@@ -680,7 +680,7 @@ export { FunctionalButton, ClassButton, MemoButton, RefButton };
       const { walkComponents, walkExports } = require('../src/parser/walker');
       const components = walkComponents(result.ast);
       const exports = walkExports(result.ast);
-      
+
       // 验证函数组件被识别
       expect(components.functions.length).toBeGreaterThanOrEqual(1);
       // 验证类组件被识别
@@ -705,7 +705,7 @@ export { useLocalStorage };
 
       const { walkComponents } = require('../src/parser/walker');
       const components = walkComponents(result.ast);
-      
+
       // 验证 Hook 被识别
       expect(components.hooks.length).toBeGreaterThanOrEqual(1);
       expect(components.hooks.map(h => h.name)).toContain('useLocalStorage');

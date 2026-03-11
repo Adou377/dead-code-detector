@@ -201,7 +201,13 @@ function extractFromAst(ast, result) {
     'defineExpose',
   ]);
 
-  const IGNORE_MACROS = ['defineOptions', 'defineProps', 'defineEmits', 'defineModel', 'defineExpose'];
+  const IGNORE_MACROS = [
+    'defineOptions',
+    'defineProps',
+    'defineEmits',
+    'defineModel',
+    'defineExpose',
+  ];
 
   const exports = walker.walkExports(ast);
 

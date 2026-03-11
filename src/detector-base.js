@@ -56,10 +56,19 @@ class RegexCache {
           this.cache.set(key, new RegExp(`export\\s+\\{[^}]*\\b${escapedName}\\b[^}]*\\}`, 'g'));
           break;
         case 'export-decl':
-          this.cache.set(key, new RegExp(`export\\s+(?:const|let|var|function|class)\\s+${escapedName}\\b[^;]*;?`, 'g'));
+          this.cache.set(
+            key,
+            new RegExp(
+              `export\\s+(?:const|let|var|function|class)\\s+${escapedName}\\b[^;]*;?`,
+              'g'
+            )
+          );
           break;
         case 'var-decl':
-          this.cache.set(key, new RegExp(`\\b(?:const|let|var|function|class)\\s+${escapedName}\\b`, 'g'));
+          this.cache.set(
+            key,
+            new RegExp(`\\b(?:const|let|var|function|class)\\s+${escapedName}\\b`, 'g')
+          );
           break;
         case 'decorator':
           this.cache.set(key, new RegExp(`^\\s*@${escapedName}(?:\\s*\\([^)]*\\))?`, 'gm'));

@@ -1,13 +1,42 @@
-# Changelog
+# 📝 变更日志
 
-All notable changes to this project will be documented in this file.
+所有重要的项目变更都会记录在此文件中。
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
+项目遵循 [语义化版本](https://semver.org/lang/zh-CN/spec/v2.0.0.html)。
+
+---
+
+## [1.1.2] - 2026-03-11
+
+<details>
+<summary>查看详情</summary>
+
+### 🐛 修复
+
+- **CLI 显示问题修复** - 参数未设置时显示异常
+  - 修复 `maxFileSize` 未设置时显示 `NaN` 的问题，现在正确显示默认值 `1.0MB`
+  - 修复 `concurrency` 未设置时显示 `undefined` 的问题，现在正确显示默认值 `50`
+
+### 🔧 改动
+
+- **代码风格统一**
+  - 运行 Prettier 格式化所有源代码、测试和文档文件
+
+### 📌 升级提示
+
+从 1.1.1 升级到 1.1.2 无破坏性变更，直接更新即可
+
+</details>
+
+---
 
 ## [1.1.1] - 2026-03-11
 
-### Added
+<details>
+<summary>查看详情</summary>
+
+### ✨ 新增
 
 - **智能增量分析** - 增量分析体验优化
   - 自动检测默认分支（支持 `main` 和 `master`）
@@ -15,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 新增 `detectDefaultBranch()` 函数用于自动检测 Git 默认分支
   - 新增 `branchExists()` 函数验证分支存在性
 
-### Changed
+### 🔧 改动
 
 - **增量分析 API 重构** - 返回值结构优化
   - `getChangedFiles()` 返回值从数组改为对象格式，包含更丰富的元数据
@@ -27,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `reason`: 回退原因（如适用）
   - 支持不指定 `--since` 参数时自动检测基准分支
 
-### Fixed
+### 🐛 修复
 
 - **Worker 线程池资源泄漏** - 进程挂起问题修复
   - 修复任务完成时超时定时器未清除，导致进程无法正常退出的问题
@@ -38,19 +67,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 修复 `parse-worker.js` 中 `vueInfo` 缺少 `isPureTemplateComponent` 字段的问题
   - 正确区分纯模板组件（无 `<script>` 块）和有脚本组件的处理逻辑
 
-### Documentation
+### 📚 文档
 
 - 更新 README.md 和 README.zh-CN.md，添加增量分析功能说明
 - 优化 API.md 文档，补充新增 API 说明
 - 更新 MIGRATION.md，添加 1.0.x → 1.1.x 升级指南
 
-### Upgrade Notes
+### 📌 升级提示
 
 从 1.1.0 升级到 1.1.1 无破坏性变更，直接更新即可
 
+</details>
+
+---
+
 ## [1.1.0] - 2026-03-11
 
-### Performance
+<details>
+<summary>查看详情</summary>
+
+### ⚡ 性能
 
 - **LRU 缓存策略**
   - 实现 Map + 双向链表 LRU 缓存，支持自动淘汰
@@ -71,7 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 动态并发调整支持
   - 任务优先级队列支持
 
-### Changed
+### 🔧 改动
 
 - **代码复杂度降低**
   - 最长函数从 74 行降至 25 行
@@ -88,22 +124,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 移除约 10 个重复测试用例
   - 新增边界情况测试覆盖
 
-### Removed
+### 🗑️ 移除
 
 - 移除未使用的 `MemoryMonitor` 类
 
-### Documentation
+### 📚 文档
 
 - 补充 53 个函数的 JSDoc 注释
 - detector.js 新增 43 个方法的完整文档
 
-### Fixed
+### 🐛 修复
 
 - 修复 ESLint 警告
 
+</details>
+
+---
+
 ## [1.0.1] - 2026-03-10
 
-### Changed
+<details>
+<summary>查看详情</summary>
+
+### 🔧 改动
 
 - **测试目录检测优化**
   - 测试目录不存在时静默跳过，不再输出警告信息
@@ -116,26 +159,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 新增 `hasScript` 字段区分"无脚本块"和"解析失败"两种状态
   - 纯模板组件不被追踪为组件（没有可追踪的导出）
 
-### Added
+### ✨ 新增
 
 - **模板信息提取**
   - 新增 `extractTemplateInfo` 函数
   - 自动检测 SVG 图标组件
   - 提取模板中的组件引用信息
 
-### Fixed
+### 🐛 修复
 
 - 修复纯 SVG 图标组件被误报为"解析失败"的问题
 - 修复测试目录不存在时输出过多警告的问题
 
-### Documentation
+### 📚 文档
 
 - 补充本地安装后的使用方式说明
 - 新增 `npx dead-code` 和 npm scripts 配置示例
 
+</details>
+
+---
+
 ## [1.0.0] - 2026-03-05
 
-### Added
+<details>
+<summary>查看详情</summary>
+
+### ✨ 新增
 
 - **双检测模式**
   - AST 模式（默认）：使用 Babel AST 解析，精确度高
@@ -176,18 +226,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 详细输出模式
   - 增量分析支持
 
-### Configuration Options
+### ⚙️ 配置选项
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `srcDir` | 源代码目录 | `./src` |
+| 选项         | 说明             | 默认值                       |
+| ------------ | ---------------- | ---------------------------- |
+| `srcDir`     | 源代码目录       | `./src`                      |
 | `extensions` | 扫描的文件扩展名 | `.js, .vue, .jsx, .ts, .tsx` |
-| `ignoreDirs` | 忽略的目录 | `node_modules, dist, .git` |
-| `mode` | 检测模式 | `ast` |
-| `fix` | 启用自动修复 | `false` |
-| `verbose` | 详细输出 | `false` |
+| `ignoreDirs` | 忽略的目录       | `node_modules, dist, .git`   |
+| `mode`       | 检测模式         | `ast`                        |
+| `fix`        | 启用自动修复     | `false`                      |
+| `verbose`    | 详细输出         | `false`                      |
 
-### Dependencies
+### 📦 依赖项
 
 - @babel/parser: ^7.27.2
 - @babel/traverse: ^7.27.2
@@ -195,8 +245,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - commander: ^12.1.0
 - ora: ^5.4.1
 
-### Known Limitations
+### ⚠️ 已知限制
 
 - 动态导入在某些情况下可能无法完全检测
 - 使用字符串方式解析的组件可能无法检测
 - 导出/导入解析的某些边界情况可能未处理
+
+</details>

@@ -238,20 +238,33 @@ describe('Config Module', () => {
       test('应该接受有效范围内的文件大小', () => {
         expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: 0 })).not.toThrow();
         expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: 1000000 })).not.toThrow();
-        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: CONFIG_LIMITS.MAX_FILE_SIZE_10MB })).not.toThrow();
+        expect(() =>
+          validateConfig({ srcDir: process.cwd(), maxFileSize: CONFIG_LIMITS.MAX_FILE_SIZE_10MB })
+        ).not.toThrow();
       });
 
       test('应该拒绝负数文件大小', () => {
-        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: -1 })).toThrow('maxFileSize: 必须在 0 到 10MB 之间');
+        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: -1 })).toThrow(
+          'maxFileSize: 必须在 0 到 10MB 之间'
+        );
       });
 
       test('应该拒绝超过 10MB 的文件大小', () => {
-        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: CONFIG_LIMITS.MAX_FILE_SIZE_10MB + 1 })).toThrow('maxFileSize: 必须在 0 到 10MB 之间');
+        expect(() =>
+          validateConfig({
+            srcDir: process.cwd(),
+            maxFileSize: CONFIG_LIMITS.MAX_FILE_SIZE_10MB + 1,
+          })
+        ).toThrow('maxFileSize: 必须在 0 到 10MB 之间');
       });
 
       test('应该拒绝非数字类型', () => {
-        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: '1000000' })).toThrow('maxFileSize: 必须是数字');
-        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: NaN })).toThrow('maxFileSize: 必须是数字');
+        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: '1000000' })).toThrow(
+          'maxFileSize: 必须是数字'
+        );
+        expect(() => validateConfig({ srcDir: process.cwd(), maxFileSize: NaN })).toThrow(
+          'maxFileSize: 必须是数字'
+        );
       });
     });
 
@@ -259,22 +272,36 @@ describe('Config Module', () => {
       test('应该接受有效范围内的并发数', () => {
         expect(() => validateConfig({ srcDir: process.cwd(), concurrency: 1 })).not.toThrow();
         expect(() => validateConfig({ srcDir: process.cwd(), concurrency: 50 })).not.toThrow();
-        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: CONFIG_LIMITS.MAX_CONCURRENCY })).not.toThrow();
+        expect(() =>
+          validateConfig({ srcDir: process.cwd(), concurrency: CONFIG_LIMITS.MAX_CONCURRENCY })
+        ).not.toThrow();
       });
 
       test('应该拒绝小于 1 的并发数', () => {
-        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: 0 })).toThrow('concurrency: 必须在 1 到 1000 之间');
-        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: -1 })).toThrow('concurrency: 必须在 1 到 1000 之间');
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: 0 })).toThrow(
+          'concurrency: 必须在 1 到 1000 之间'
+        );
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: -1 })).toThrow(
+          'concurrency: 必须在 1 到 1000 之间'
+        );
       });
 
       test('应该拒绝大于 1000 的并发数', () => {
-        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: CONFIG_LIMITS.MAX_CONCURRENCY + 1 })).toThrow('concurrency: 必须在 1 到 1000 之间');
+        expect(() =>
+          validateConfig({ srcDir: process.cwd(), concurrency: CONFIG_LIMITS.MAX_CONCURRENCY + 1 })
+        ).toThrow('concurrency: 必须在 1 到 1000 之间');
       });
 
       test('应该拒绝非整数并发数', () => {
-        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: 1.5 })).toThrow('concurrency: 必须是整数');
-        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: '50' })).toThrow('concurrency: 必须是整数');
-        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: null })).toThrow('concurrency: 必须是整数');
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: 1.5 })).toThrow(
+          'concurrency: 必须是整数'
+        );
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: '50' })).toThrow(
+          'concurrency: 必须是整数'
+        );
+        expect(() => validateConfig({ srcDir: process.cwd(), concurrency: null })).toThrow(
+          'concurrency: 必须是整数'
+        );
       });
     });
 

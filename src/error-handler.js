@@ -1,6 +1,6 @@
 /**
  * 统一错误处理模块
- * 
+ *
  * 提供统一的错误处理、警告输出和错误创建功能
  * 消除项目中重复的错误处理逻辑
  */
@@ -19,10 +19,12 @@ const WarningType = {
 };
 
 const WarningTemplates = {
-  [WarningType.FILE_TOO_LARGE]: (filePath) => `文件过大，跳过解析: ${filePath}`,
-  [WarningType.PARSE_FAILED]: (filePath, errorMsg) => `解析文件失败: ${filePath}\n   错误信息: ${errorMsg}`,
+  [WarningType.FILE_TOO_LARGE]: filePath => `文件过大，跳过解析: ${filePath}`,
+  [WarningType.PARSE_FAILED]: (filePath, errorMsg) =>
+    `解析文件失败: ${filePath}\n   错误信息: ${errorMsg}`,
   [WarningType.PATH_UNSAFE]: (reason, path) => `路径安全警告: ${reason}，已跳过: ${path}`,
-  [WarningType.ACCESS_DENIED]: (target, errorMsg) => `无法访问: ${target}\n   错误信息: ${errorMsg}`,
+  [WarningType.ACCESS_DENIED]: (target, errorMsg) =>
+    `无法访问: ${target}\n   错误信息: ${errorMsg}`,
   [WarningType.PROCESS_FAILED]: (item, errorMsg, stack) => {
     let msg = `处理失败: ${item}\n   错误信息: ${errorMsg}`;
     if (stack) {
@@ -31,7 +33,8 @@ const WarningTemplates = {
     return msg;
   },
   [WarningType.FIX_ERROR]: (filePath, errorMsg) => `修复文件 ${filePath} 时出错: ${errorMsg}`,
-  [WarningType.CONFIG_LOAD_FAILED]: (filePath, errorMsg) => `读取配置文件 ${filePath} 失败: ${errorMsg}`,
+  [WarningType.CONFIG_LOAD_FAILED]: (filePath, errorMsg) =>
+    `读取配置文件 ${filePath} 失败: ${errorMsg}`,
 };
 
 let logger = defaultLogger;
@@ -97,14 +100,15 @@ const ValidationErrorMessages = {
   [ValidationErrorType.INVALID_OPTIONS]: '配置选项必须是一个对象',
   [ValidationErrorType.INVALID_SRC_DIR]: 'srcDir 必须是非空字符串',
   [ValidationErrorType.INVALID_SRC_DIR_CHARS]: 'srcDir 包含非法字符',
-  [ValidationErrorType.INVALID_SRC_DIR_FORMAT]: (srcDir) => `srcDir 路径格式无效: ${srcDir}`,
+  [ValidationErrorType.INVALID_SRC_DIR_FORMAT]: srcDir => `srcDir 路径格式无效: ${srcDir}`,
   [ValidationErrorType.INVALID_CONCURRENCY_TYPE]: 'concurrency 必须是整数',
   [ValidationErrorType.INVALID_CONCURRENCY_RANGE]: 'concurrency 必须在 1 到 1000 之间',
   [ValidationErrorType.INVALID_MAX_FILE_SIZE_TYPE]: 'maxFileSize 必须是数字',
   [ValidationErrorType.INVALID_MAX_FILE_SIZE_RANGE]: 'maxFileSize 必须在 0 到 10MB 之间',
-  [ValidationErrorType.CONFIG_VALIDATION_FAILED]: (errors) => `配置验证失败:\n  - ${errors.join('\n  - ')}`,
+  [ValidationErrorType.CONFIG_VALIDATION_FAILED]: errors =>
+    `配置验证失败:\n  - ${errors.join('\n  - ')}`,
   [ValidationErrorType.WORKER_POOL_THREAD]: 'WorkerPool 只能在主线程中使用',
-  [ValidationErrorType.UNKNOWN_TASK_TYPE]: (taskType) => `未知任务类型: ${taskType}`,
+  [ValidationErrorType.UNKNOWN_TASK_TYPE]: taskType => `未知任务类型: ${taskType}`,
 };
 
 function throwValidationError(errorType, ...args) {
@@ -113,7 +117,8 @@ function throwValidationError(errorType, ...args) {
     throw new Error(`未知的验证错误类型: ${errorType}`);
   }
 
-  const message = typeof messageTemplate === 'function' ? messageTemplate(...args) : messageTemplate;
+  const message =
+    typeof messageTemplate === 'function' ? messageTemplate(...args) : messageTemplate;
   throw new Error(message);
 }
 

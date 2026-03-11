@@ -80,7 +80,12 @@ describe('ExportItem', () => {
     });
 
     test('createReexport 应创建重新导出', () => {
-      const item = ExportItem.createReexport('utils', 15, 'export { utils } from "./lib";', './lib');
+      const item = ExportItem.createReexport(
+        'utils',
+        15,
+        'export { utils } from "./lib";',
+        './lib'
+      );
 
       expect(item.name).toBe('utils');
       expect(item.type).toBe('reexport');

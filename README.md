@@ -90,21 +90,21 @@ Create `.deadcoderc.json` in your project root:
 <details>
 <summary>Full configuration options</summary>
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `srcDir` | Source directory to scan | `./src` |
-| `extensions` | File extensions to include | `[".js", ".vue", ".jsx", ".ts", ".tsx"]` |
-| `ignoreDirs` | Directories to ignore | `["node_modules", "dist", ".git"]` |
-| `mode` | Detection mode: "ast" or "regex" | `"ast"` |
-| `fix` | Enable auto-fix mode | `false` |
-| `verbose` | Enable detailed output | `false` |
-| `maxFileSize` | Max file size in bytes | `1000000` (1MB) |
-| `concurrency` | Maximum concurrency | `50` |
-| `cache` | Enable persistent cache | `true` |
-| `cacheDir` | Cache directory | `.dead-code-cache` |
-| `cacheMaxAge` | Cache max age in ms | `604800000` (7 days) |
-| `maxEntries` | Maximum cache entries | `100` |
-| `maxMemoryMB` | Maximum memory for cache | `50` |
+| Option        | Description                      | Default                                  |
+| ------------- | -------------------------------- | ---------------------------------------- |
+| `srcDir`      | Source directory to scan         | `./src`                                  |
+| `extensions`  | File extensions to include       | `[".js", ".vue", ".jsx", ".ts", ".tsx"]` |
+| `ignoreDirs`  | Directories to ignore            | `["node_modules", "dist", ".git"]`       |
+| `mode`        | Detection mode: "ast" or "regex" | `"ast"`                                  |
+| `fix`         | Enable auto-fix mode             | `false`                                  |
+| `verbose`     | Enable detailed output           | `false`                                  |
+| `maxFileSize` | Max file size in bytes           | `1000000` (1MB)                          |
+| `concurrency` | Maximum concurrency              | `50`                                     |
+| `cache`       | Enable persistent cache          | `true`                                   |
+| `cacheDir`    | Cache directory                  | `.dead-code-cache`                       |
+| `cacheMaxAge` | Cache max age in ms              | `604800000` (7 days)                     |
+| `maxEntries`  | Maximum cache entries            | `100`                                    |
+| `maxMemoryMB` | Maximum memory for cache         | `50`                                     |
 
 </details>
 
@@ -120,17 +120,18 @@ dead-code --incremental
 dead-code --incremental --base-branch develop
 ```
 
-| Scenario | Command |
-|----------|---------|
-| Daily development | `dead-code --incremental` |
-| PR code review | `dead-code --incremental --base-branch main` |
-| Full code audit | `dead-code` |
+| Scenario          | Command                                      |
+| ----------------- | -------------------------------------------- |
+| Daily development | `dead-code --incremental`                    |
+| PR code review    | `dead-code --incremental --base-branch main` |
+| Full code audit   | `dead-code`                                  |
 
 ## 🔍 Detection Modes
 
 ### AST Mode (Default)
 
 **Recommended for most projects**
+
 - Uses Babel AST parsing for highly accurate detection
 - Supports multi-line exports, TypeScript types, and Vue `<script setup>`
 - Better handling of complex export/import patterns
@@ -138,6 +139,7 @@ dead-code --incremental --base-branch develop
 ### Regex Mode
 
 **For legacy projects or performance-critical scenarios**
+
 - Uses traditional regular expressions for faster scanning
 - Less accurate but works with older codebases
 - Limited support for complex syntax features
@@ -156,6 +158,7 @@ dead-code --fix
 ```
 
 **Safety Measures:**
+
 1. Always run without `--fix` first to preview
 2. Use `--dry-run` to see what would be deleted
 3. Use `--confirm` for interactive confirmation
@@ -248,11 +251,11 @@ Restore from `backup/` directory. The tool creates automatic backups before maki
 
 ### Error Messages
 
-| Error | Solution |
-|-------|----------|
-| "Cannot parse file" | File has syntax errors, will be skipped |
+| Error                     | Solution                                 |
+| ------------------------- | ---------------------------------------- |
+| "Cannot parse file"       | File has syntax errors, will be skipped  |
 | "Path alias not resolved" | Check project config or specify manually |
-| "No files found" | Check source directory with `--src` |
+| "No files found"          | Check source directory with `--src`      |
 
 ## 📖 API Documentation
 
@@ -268,6 +271,7 @@ console.log('Unused exports:', result.results.unusedExports);
 ## 🔄 Migration Guide
 
 Migrating from other tools? See [MIGRATION.md](./MIGRATION.md) for:
+
 - Migration from ts-prune, unused, webpack-deadcode-plugin
 - Version upgrade instructions
 - Configuration migration examples
